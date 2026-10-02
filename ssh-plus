@@ -1,4 +1,12 @@
 #!/bin/bash
+# Corrige Python do Ubuntu 20.04 quando apt_pkg estiver incompatível
+if [ -x /usr/bin/python3.8 ]; then
+    if ! /usr/bin/python3 -c "import apt_pkg" >/dev/null 2>&1; then
+        ln -sf /usr/bin/python3.8 /usr/bin/python3
+    fi
+fi
+apt update -y
+
 clear
 #--------------------------
 # @TECHNETVPN
