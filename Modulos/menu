@@ -266,39 +266,49 @@ case "$x" in
    23)
    clear
    reiniciarsistema
+    menu2
    ;;
    24)
    clear
    reiniciarservicos
    sleep 3
+    menu2
    ;;
    25)
    blockt
+    menu2
    ;;
    26)
-   botssh
+    MENU_RETURN=menu2 botssh
+    menu2
    ;;
    27)
    inst-botteste
+    menu2
    ;;
    28)
    clear
    senharoot
    sleep 3
+    menu2
    ;;
    29)
    autoexec
+    menu2
    ;;
    30)
    attscript
+    menu2
    ;;
    31)
    clear
    delscript
+    menu2
    ;;
    32)
    clear
    tcptweaker.sh
+    menu2
    ;;
    33)
    menu

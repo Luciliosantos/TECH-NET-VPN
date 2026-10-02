@@ -67,7 +67,7 @@ fun_botOnOff() {
         fun_bar 'fun_bot1'
         [[ $(ps x | grep "bot_plus" | grep -v grep | wc -l) != '0' ]] && echo -e "\n\033[1;32m BOT TECH NET VPN !\033[0m" || echo -e "\n\033[1;31m ERRO! REANALISE SUAS INFORMACOES\033[0m"
         sleep 2
-        menu
+        [[ "$MENU_RETURN" == "menu2" ]] && exit 0 || menu
     } || {
         clear
         echo -e "\033[1;32mPARANDO TECH NET VPN... \033[0m\n"
@@ -83,7 +83,7 @@ fun_botOnOff() {
         fun_bar 'fun_bot2'
         echo -e "\n\033[1;32m \033[1;31mBOT TECH NET VPN! \033[0m"
         sleep 2
-        menu
+        [[ "$MENU_RETURN" == "menu2" ]] && exit 0 || menu
     }
 }
 
@@ -101,7 +101,7 @@ fun_instbot() {
     } || {
         echo -e "\n\033[1;31mRetornando...\033[0m"
         sleep 2
-        menu
+        [[ "$MENU_RETURN" == "menu2" ]] && exit 0 || menu
     }
 }
 [[ -f "/etc/SSHPlus/ShellBot.sh" ]] && fun_botOnOff || fun_instbot
