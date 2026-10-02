@@ -65,12 +65,12 @@ fun_botOnOff() {
             cd $HOME
         }
         fun_bar 'fun_bot1'
-        [[ $(ps x | grep "bot_plus" | grep -v grep | wc -l) != '0' ]] && echo -e "\n\033[1;32m BOT SCOTT PLUS !\033[0m" || echo -e "\n\033[1;31m ERRO! REANALISE SUAS INFORMACOES\033[0m"
+        [[ $(ps x | grep "bot_plus" | grep -v grep | wc -l) != '0' ]] && echo -e "\n\033[1;32m BOT TECH NET VPN !\033[0m" || echo -e "\n\033[1;31m ERRO! REANALISE SUAS INFORMACOES\033[0m"
         sleep 2
         menu
     } || {
         clear
-        echo -e "\033[1;32mPARANDO SCOTT PLUS... \033[0m\n"
+        echo -e "\033[1;32mPARANDO TECH NET VPN... \033[0m\n"
         fun_bot2() {
             screen -r -S "bot_plus" -X quit
             screen -wipe 1>/dev/null 2>/dev/null
@@ -81,7 +81,7 @@ fun_botOnOff() {
             sleep 1
         }
         fun_bar 'fun_bot2'
-        echo -e "\n\033[1;32m \033[1;31mBOT SCOTT PLUS! \033[0m"
+        echo -e "\n\033[1;32m \033[1;31mBOT TECH NET VPN! \033[0m"
         sleep 2
         menu
     }
