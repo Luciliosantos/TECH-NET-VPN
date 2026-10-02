@@ -1,6 +1,6 @@
 #!/bin/bash
 clear
-#--------@MEGALODON_SSH-----------#
+#--------@TECHNETVPN-----------#
 source ShellBot.sh
 touch lista
 [[ -z $1 ]] && {

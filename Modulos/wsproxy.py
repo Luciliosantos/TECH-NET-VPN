@@ -2,7 +2,7 @@
 # encoding: utf-8
 # CRAZY By @Crazy_vpn
 import socket, threading, thread, select, signal, sys, time, getopt
-MSG = '@MEGALODON_SSH'
+MSG = '@TECHNETVPN'
 COR = '<font color="null">'
 FTAG = '</font>'
 PASS = ''

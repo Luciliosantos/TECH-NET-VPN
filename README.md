@@ -1,11 +1,11 @@
-⚡MEGALODON SSH 🚀 ✅ 🇧🇷
+⚡TECH NET VPN 🚀 ✅ 🇧🇷
 
-# Telegram @MEGALODON_SSH
+# Telegram @TECHNETVPN
 
 # WhatsApp +5534999844766
 
 *PROJETO EM BETA🍷🗿
 ```
-apt install wget -y; bash <(wget -qO- raw.githubusercontent.com/MEGALODON-SSH/MEGA/main/ssh-plus)
+apt install wget -y; bash <(wget -qO- raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/ssh-plus)
 
 ```

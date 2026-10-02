@@ -1,6 +1,6 @@
 #!/bin/bash
 #====================================================
-#	@MEGALODON_SSH
+#	@TECHNETVPN
 #====================================================
 cor1='\033[41;1;37m'
 cor2='\033[44;1;37m'
@@ -783,9 +783,9 @@ SCOLOR='\033[0m'
 				cd /etc/stunnel/
 				rm -rf stunnel.conf
 				rm -rf stunnel.pem
-				wget https://raw.githubusercontent.com/MEGALODON-SSH/SSHPLUS/main/Install/cert
-				wget https://raw.githubusercontent.com/MEGALODON-SSH/SSHPLUS/main/Install/key
-				wget https://raw.githubusercontent.com/MEGALODON-SSH/SSHPLUS/main/Install/stunnel
+				wget https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Install/cert
+				wget https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Install/key
+				wget https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Install/stunnel
 				mv cert cert.pem
 				mv key key.pem
 				mv stunnel stunnel.conf
@@ -1287,9 +1287,9 @@ SCOLOR='\033[0m'
 			# Adquirindo easy-rsa
 			echo ""
 			fun_dep() {
-				wget -O ~/EasyRSA-3.0.1.tgz "https://raw.githubusercontent.com/root719/MEGALODON SSH/main/Install/EasyRSA-3.0.1.tgz"
+				wget -O ~/EasyRSA-3.0.1.tgz "https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Install/EasyRSA-3.0.1.tgz"
 				[[ ! -e $HOME/EasyRSA-3.0.1.tgz ]] && {
-					wget -O ~/EasyRSA-3.0.1.tgz "https://raw.githubusercontent.com/root719/MEGALODON SSH/main/Install/EasyRSA-3.0.1.tgz"
+					wget -O ~/EasyRSA-3.0.1.tgz "https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Install/EasyRSA-3.0.1.tgz"
 				}
 				tar xzf ~/EasyRSA-3.0.1.tgz -C ~/
 				mv ~/EasyRSA-3.0.1/ /etc/openvpn/
@@ -1499,7 +1499,7 @@ exit 0' >$RCLOCAL
 		echo -e "\033[01;31m╚═╦══════════════════════════════╝\033[0m"
 		echo -ne "  \033[1;31m╠═══⟩⟩"
 			tput civis
-			echo -ne "@MEGALODON_SSH" | lolcat
+			echo -ne "@TECHNETVPN" | lolcat
 			read -p "$(echo -e "  \033[1;31m╚═════❪\033[1;32mHOJE VAMO DE\033[1;33m\033[1;31m\033[1;37m: ")" resposta
 		if [[ "$resposta" = '1' ]]; then
 			if ps x | grep -w proxy.py | grep -v grep 1>/dev/null 2>/dev/null; then
@@ -1630,7 +1630,7 @@ exit 0' >$RCLOCAL
 elif [[ "$resposta" = '3' ]]; then
 		clear
 		if ps x | grep -w WebSocket | grep -v grep 1>/dev/null 2>/dev/null; then
-		figlet 'MEGALODON SSH' | lolcat
+		figlet 'TECH NET VPN' | lolcat
 		echo -e "\E[41;1;37m       🚀   WEBSOCKET SECURITY   🚀           \E[0m"
 				echo ""
 				fun_wsswsocksoff() { 
@@ -1652,7 +1652,7 @@ elif [[ "$resposta" = '3' ]]; then
 				
 				fun_socks
 			else
-			figlet 'MEGALODON SSH' | lolcat
+			figlet 'TECH NET VPN' | lolcat
 		echo -e "\E[44;1;37m       🚀   WEBSOCKET SECURITY   🚀           \E[0m"
 				echo ""
 				rm -rf /etc/mamalista
@@ -2183,7 +2183,7 @@ elif [[ "$resposta" = '4' ]]; then
 		while true $x != "ok"; do
 			[[ ! -e '/home/sshplus' ]] && exit 0
 			clear
-			figlet 'MEGALODON SSH' | lolcat
+			figlet 'TECH NET VPN' | lolcat
 system=$(cat /etc/issue.net)
 date=$(date '+%Y-%m-%d <> %H:%M:%S')
 echo -e "\033[1;37m $system                $date"
