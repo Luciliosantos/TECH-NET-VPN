@@ -1,0 +1,70 @@
+#!/bin/bash
+# FERRAMENTAS — TECH NET VPN
+# CORRIGIDO (v1.2.1): o arquivo original vinha TRUNCADO do repositorio
+# de origem (fragmento sem cabecalho de funcao, com "done"/"}" soltos e
+# um trecho de fun_conexao colado no final). Era a causa da opcao 17
+# do menu principal (Ferramentas) quebrar ao abrir. Reestruturado por
+# completo no padrao TNUi, com os 11 recursos originais mapeados para
+# os modulos reais do projeto.
+[[ -f /bin/tnui ]] && source /bin/tnui
+
+_umin () { # instalar ferramenta de monitoramento se ausente
+   local tool="$1" pkg="$1"
+   command -v "$tool" >/dev/null 2>&1 && return 0
+   echo ""
+   tn_info "${tool} não está instalado."
+   echo -ne " ${TN_C_C}➤${TN_R} ${TN_C_N}Instalar agora via apt? [s/n] :${TN_R} "
+   read -r r
+   [[ "$r" == "s" || "$r" == "S" ]] || { tn_erro "Operação cancelada."; sleep 2; return 1; }
+   apt-get install -y "$pkg" >/dev/null 2>&1 || { tn_erro "Falha ao instalar $pkg (verifique a rede/apt)."; sleep 2; return 1; }
+   tn_ok "$pkg instalado."
+}
+
+fun_utili () {
+while true
+do
+   clear
+   local st_tor st_ddos st_rev
+   [[ -e /etc/Plus-torrent ]] && st_tor=1 || st_tor=0
+   pgrep -x fail2ban-server >/dev/null 2>&1 && st_ddos=1 || st_ddos=0
+   pgrep -f 'bot_rev' >/dev/null 2>&1 && st_rev=1 || st_rev=0
+   tn_logo
+   tn_box_top "FERRAMENTAS"
+   tn_box_sep "PROTECAO"
+   tn_item "01" "Bloqueador de site" "" "02" "Bloqueio torrent" "${st_tor}"
+   tn_item "03" "Anti ataque DDoS" "${st_ddos}" "04" "Bot revenda" "${st_rev}"
+   tn_box_sep "SISTEMA"
+   tn_item "05" "Sistema avançado" "" "06" "Trafego total" ""
+   tn_item "07" "Bloquear usuario" "" "" "" ""
+   tn_box_sep "MONITORAMENTO"
+   tn_item "08" "Trafego de rede (nload)" "" "09" "Processos ativos (bashtop)" ""
+   tn_item "10" "Sistema completo (htop)" "" "11" "Banda por processo (nethogs)" ""
+   tn_item "00" "« Voltar" "" "" "" ""
+   tn_box_end
+   tn_prompt
+   read -r x
+   case "$x" in
+      1|01) clear; blocksite ;;
+      2|02) clear; blockt ;;
+      3|03) clear; ddos ;;
+      4|04) clear; bot ;;
+      5|05) clear; mtuning ;;
+      6|06) clear; trafegototal ;;
+      7|07) clear; blockuser ;;
+      8|08) clear
+            _umin nload || { continue; }
+            echo -e "\033[1;32mPARA SAIR PRESSIONE CTRL + C\033[1;36m"; sleep 2
+            nload ;;
+      9|09) clear; bashtop ;;
+      10)   clear
+            _umin htop || { continue; }
+            htop ;;
+      11)   clear
+            _umin nethogs || { continue; }
+            nethogs ;;
+      0|00) clear; menu ;;
+      *) tn_erro "Opção inválida !"; sleep 2 ;;
+   esac
+done
+}
+fun_utili

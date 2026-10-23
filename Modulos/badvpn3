@@ -1,0 +1,120 @@
+#!/bin/bash
+[[ -f /bin/tnui ]] && source /bin/tnui
+fun_badvpn() {
+    clear
+    tn_box_top "BADVPN ARM • UDP"
+    if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+        echo -e "\033[1;33mPORTAS\033[1;37m: \033[1;32m$(netstat -nplt | grep 'badvpn-ud' | awk {'print $4'} | cut -d: -f2 | xargs)"
+    else
+        sleep 0.1
+    fi
+    var_sks1=$(pgrep -f 'badvpn-udpgw' > /dev/null && echo -e "\033[1;32m(ON ◉) " || echo -e "\033[1;31m(OFF ○)")
+echo -e "\033[01;34m===================================================================="
+    echo -e "\033[1;34m[\033[1;37m01 •\033[1;34m]\033[1;37m  > \033[1;33m\033[1;37m( HABILITAR PORTA UDP PARA JOGOS/VOIP. ) $var_sks1 \033[0m"
+    echo -e "\033[1;34m[\033[1;37m02 •\033[1;34m]\033[1;37m  > \033[1;33m\033[1;37m( ABRIR NOVAS PORTAS PARA CONEXOES UDP. )\033[0m"
+    echo -e "\033[1;34m[\033[1;37m00 •\033[1;34m]\033[1;37m  > \033[1;37m( VOLTAR AO MENU ANTERIOR. )\033[0m"
+echo -e "\033[01;34m===================================================================="
+    echo -ne "\033[1;37m[ESCOLHA UM NUMERO]\033[1;37m: "; read resposta
+    if [[ "$resposta" = '1' ]]; then
+        if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+            clear
+            tn_box_top "BADVPN-UDP"
+            echo ""
+            fun_stopbad () {
+                sleep 1
+                for pidudpvpn in $(screen -ls | grep ".udpvpn" | awk {'print $1'}); do
+                    screen -r -S "$pidudpvpn" -X quit
+				done
+                [[ $(grep -wc "udpvpn" /etc/autostart) != '0' ]] && {
+                    sed -i '/udpvpn/d' /etc/autostart
+                }
+                sleep 1
+                screen -wipe >/dev/null
+            }
+            echo -e "\033[1;33mPARANDO O BADVPN-UDP\033[1;33m"
+            echo ""
+            fun_stopbad
+            echo -e "\033[1;32mBADVPN-UDP DESLIGADO COM SUCESSO!\033[1;33m"
+            sleep 2s
+            fun_badvpn
+        else
+            clear
+            echo -e "\033[1;32mINICIANDO O BADVPN-UDP... \033[0m\n"
+            fun_udpon () {
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 16384 --max-connections-for-client 5 --client-socket-sndbuf 16384 --udp-mtu 9000
+                [[ $(grep -wc "udpvpn" /etc/autostart) = '0' ]] && {
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 16384 --max-connections-for-client 5 --client-socket-sndbuf 16384 --udp-mtu 9000" >> /etc/autostart
+                } || {
+                    sed -i '/udpvpn/d' /etc/autostart
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 16384 --max-connections-for-client 5 --client-socket-sndbuf 16384 --udp-mtu 9000" >> /etc/autostart
+                }
+                sleep 1
+            }
+            inst_udp () {
+                [[ -e "/bin/badvpn-udpgw" ]] && {
+                    sleep 0.1
+                } || {
+                    # CORRIGIDO: binario vem do PROJETO LOCAL (o download remoto
+                    # do repositorio antigo foi removido; o instalador ja copia
+                    # Install/badvpn-udpgw para /bin na arquitetura x86_64)
+                    SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
+                    if [[ -n "$SRC" && -f "$SRC/Install/badvpn-udpgw" ]]; then
+                        cp -f "$SRC/Install/badvpn-udpgw" /bin/badvpn-udpgw
+                        chmod +x /bin/badvpn-udpgw
+                    else
+                        echo -e "\033[1;31mERRO: binario badvpn-udpgw ausente no projeto local.\033[0m"
+                        echo -e "\033[1;33mExtraia o ZIP completo do painel na VPS e reinstale.\033[0m"
+                        sleep 3
+                        menub
+                    fi
+                }
+            }
+            inst_udp
+            fun_udpon
+            echo -e "\033[1;32mBADVPN-UDP ATIVADO COM SUCESSO!\033[1;33m"
+            sleep 3
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '2' ]]; then
+        if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+            clear
+                tn_box_top "BADVPN-UDP"
+            echo ""
+            echo -ne "\033[1;33mQUAL PORTA DESEJA ULTILIZAR \033[1;33m?\033[1;37m: "
+            read porta
+            [[ -z "$porta" ]] && {
+                echo ""
+                echo -e "\033[1;31mPorta invalida!"
+                sleep 2
+                clear
+                badvpn
+            }
+            echo ""
+            echo -e "\033[1;33mINICIANDO O BADVPN-UDP NA PORTA \033[1;36m$porta\033[1;33m"
+            fun_abrirptbad() {
+                sleep 1
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:$porta --max-clients 16384 --max-connections-for-client 5 --client-socket-sndbuf 16384 --udp-mtu 9000
+                sleep 1
+            }
+            fun_abrirptbad
+            echo ""
+            echo -e "\033[1;32mBADVPN-UDP ATIVADO COM SUCESSO\033[1;33m"
+            sleep 2
+            fun_badvpn
+        else
+            clear
+            echo -e "\033[1;31mFUNCAO INDISPONIVEL\n\n\033[1;33mATIVE O BADVPN-UDP PRIMEIRO !\033[1;33m"
+            sleep 2
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '0' ]]; then
+        echo ""
+        menu
+    else
+        echo ""
+        echo -e "\033[1;31mOpcao invalida !\033[0m"
+        sleep 1
+        fun_badvpn
+    fi
+}
+fun_badvpn

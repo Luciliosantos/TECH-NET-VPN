@@ -1,0 +1,109 @@
+#!/bin/bash
+# ==========================================================
+# ONLINE APP - Monitor de usuarios online (TECH NET VPN)
+# Gera a pagina publica do monitor em
+#   /var/www/html/server/online.html  (pagina moderna)
+#   /var/www/html/server/online      (texto simples, compat.)
+#   /var/www/html/server/index.html  (mesma pagina moderna)
+# Servida pelo apache na porta 8888 e atualizada a cada 5s.
+# Executado dentro de: screen -dmS onlineapp onlineapp
+# ==========================================================
+SRVDIR="/var/www/html/server"
+ONLINE_FILE="$SRVDIR/online"
+INTERVALO=5
+
+mkdir -p "$SRVDIR" 2>/dev/null || exit 1
+
+esc () { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
+
+while true; do
+    # Usuarios com sessao SSH ativa (logados de verdade)
+    usuarios=$(ps -eo user,comm 2>/dev/null | awk '$2 ~ /sshd/ && $1 != "root" {print $1}' | sort | uniq -c)
+
+    total=0; totalu=0; linhas_html=""; linhas_txt=""
+    if [ -n "$usuarios" ]; then
+        total=$(echo "$usuarios" | awk '{s+=$1} END {print s+0}')
+        totalu=$(echo "$usuarios" | wc -l)
+        while read qtd user; do
+            [ -z "$user" ] && continue
+            linhas_txt="$linhas_txt$user: $qtd conexao(s)\n"
+            linhas_html="$linhas_html      <tr><td><span class=\"dot\"></span> $(esc "$user")</td><td class=\"num\">$qtd</td></tr>\n"
+        done <<< "$usuarios"
+    fi
+    AGORA=$(date '+%d/%m/%Y %H:%M:%S')
+
+    # ---------- pagina moderna (online.html / index.html) ----------
+    cat > "$SRVDIR/online.html.tmp" <<EOF
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="5">
+<title>TECH NET VPN — Usuários Online</title>
+<style>
+  :root{--azul:#2563eb;--ciano:#22d3ee;--fundo:#0b1220;--card:#111a2e;--borda:#1e2a45;--txt:#e2e8f0;--txt2:#94a3b8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--fundo);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+  .wrap{width:100%;max-width:760px}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:16px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--azul),var(--ciano));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex:0 0 auto}
+  h1{font-size:1.15rem;font-weight:700;letter-spacing:.5px}
+  .sub{color:var(--txt2);font-size:.8rem}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--fundo);border:1px solid var(--borda);border-radius:12px;padding:14px;text-align:center}
+  .stat b{display:block;font-size:1.5rem;color:var(--ciano)}
+  .stat span{color:var(--txt2);font-size:.72rem;text-transform:uppercase;letter-spacing:1px}
+  table{width:100%;border-collapse:collapse}
+  th{color:var(--txt2);font-size:.72rem;text-transform:uppercase;letter-spacing:1px;text-align:left;padding:10px 12px;border-bottom:1px solid var(--borda)}
+  th:last-child,td:last-child{text-align:right}
+  td{padding:11px 12px;border-bottom:1px solid var(--borda);font-size:.95rem}
+  td.num{color:var(--ciano);font-weight:700}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#22c55e;margin-right:8px;box-shadow:0 0 8px #22c55e}
+  .vazio{color:var(--txt2);text-align:center;padding:26px 0;font-size:.95rem}
+  footer{margin-top:16px;color:var(--txt2);font-size:.75rem;text-align:center}
+  footer b{color:var(--txt)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div class="logo">TN</div>
+        <div>
+          <h1>TECH NET VPN</h1>
+          <div class="sub">Monitor de usuários online • atualiza a cada 5s</div>
+        </div>
+      </header>
+      <div class="stats">
+        <div class="stat"><b>$total</b><span>Conexões</span></div>
+        <div class="stat"><b>$totalu</b><span>Usuários</span></div>
+        <div class="stat"><b>8888</b><span>Porta</span></div>
+      </div>
+      <table>
+        <tr><th>Usuário</th><th>Conexões</th></tr>
+$(if [ -n "$linhas_html" ]; then printf '%b' "$linhas_html"; else echo '        <tr><td colspan="2" class="vazio">Nenhum usuário conectado neste momento.</td></tr>'; fi)
+      </table>
+      <footer>Atualizado em <b>$AGORA</b> • © TECH NET VPN</footer>
+    </div>
+  </div>
+</body>
+</html>
+EOF
+    mv -f "$SRVDIR/online.html.tmp" "$SRVDIR/online.html" 2>/dev/null
+    cp -f "$SRVDIR/online.html" "$SRVDIR/index.html" 2>/dev/null
+
+    # ---------- texto simples (compatibilidade /server/online) ----------
+    {
+        echo "TECH NET VPN - Usuarios Online"
+        echo "Atualizado: $AGORA"
+        echo "--------------------------------------"
+        if [ -n "$linhas_txt" ]; then printf '%b' "$linhas_txt"; else echo "Nenhum usuario conectado."; fi
+        echo "--------------------------------------"
+        echo "Total de conexoes online: $total"
+        echo "Pagina web: http://SEU_IP:8888/server/online.html"
+    } > "$SRVDIR/online.tmp" && mv -f "$SRVDIR/online.tmp" "$ONLINE_FILE" 2>/dev/null
+
+    sleep "$INTERVALO"
+done

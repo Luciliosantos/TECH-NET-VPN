@@ -1,0 +1,125 @@
+#!/bin/bash
+[[ -f /bin/tnui ]] && source /bin/tnui
+fun_badvpn() {
+    clear
+_st_udp=$(pgrep -f 'badvpn-udpgw' > /dev/null && echo 1 || echo 0)
+tn_box_top "BADVPN PRO"
+tn_line " ${TN_C_M}Ativa o túnel UDP (padrão porta 7300) para o painel.${TN_R}"
+tn_box_sep "OPCOES"
+tn_item "1" "Ativar BadVPN Pro" "${_st_udp}" "" "" ""
+tn_item "0" "« Voltar" "" "" "" ""
+tn_prompt; read resposta
+    if [[ "$resposta" = '1' ]]; then
+        if pgrep -f 'badvpn-udpgw' > /dev/null 2>&1; then
+            clear
+                tn_box_top "BADVPN"
+            echo ""
+            fun_stopbad () {
+                sleep 1
+                for pidudpvpn in $(screen -ls | grep ".udpvpn" | awk {'print $1'}); do
+                    screen -r -S "$pidudpvpn" -X quit
+				done
+                [[ $(grep -wc "udpvpn" /etc/autostart) != '0' ]] && {
+                    sed -i '/udpvpn/d' /etc/autostart
+                }
+                sleep 1
+                screen -wipe >/dev/null
+            }
+            echo -e "\033[1;32mDESATIVANDO O BADVPN PRO\033[1;33m"
+            echo ""
+            fun_stopbad
+            echo ""
+            tn_ok "BadVPN Pro desativado com sucesso"
+            sleep 3
+            fun_badvpn
+        else
+            clear
+            echo -e "\033[1;32mINICIANDO O BADVPN... \033[0m\n"
+            fun_udpon () {
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 8
+                [[ $(grep -wc "udpvpn" /etc/autostart) = '0' ]] && {
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 8 --client-socket-sndbuf 10000" >> /etc/autostart
+                } || {
+                    sed -i '/udpvpn/d' /etc/autostart
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 8 --client-socket-sndbuf 10000" >> /etc/autostart
+                }
+                sleep 1
+            }
+            # CORRIGIDO: antes tentava baixar o binario de um link
+            # dropbox MORTO (ainda por cima com flag -o errada), e
+            # imprimia "ATIVADO COM SUCESSO" sem verificar nada.
+            # O binario agora e instalado pelo proprio instalador
+            # (Install/badvpn-udpgw -> /bin/badvpn-udpgw) e o
+            # resultado e verificado de verdade.
+            inst_udp () {
+                if [[ ! -x "/bin/badvpn-udpgw" ]]; then
+                    echo -e "\033[1;31mFALHOU: /bin/badvpn-udpgw ausente.\033[0m"
+                    echo -e "\033[1;33mReinstale o painel (o binario vem no projeto) ou copie\033[0m"
+                    echo -e "\033[1;33mmanualmente: cp Install/badvpn-udpgw /bin/ && chmod +x /bin/badvpn-udpgw\033[0m"
+                    return 1
+                fi
+                return 0
+            }
+            echo ""
+            if inst_udp; then
+                fun_udpon
+                sleep 2
+                if pgrep -f 'badvpn-udpgw' > /dev/null; then
+                    echo ""
+                    echo -e "\033[1;32mBADVPN ATIVADO COM SUCESSO (verificado, porta 7300)\033[1;33m"
+                else
+                    echo ""
+                    echo -e "\033[1;31mFALHOU: o badvpn-udpgw nao ficou em execucao.\033[0m"
+                    echo -e "\033[1;33mRode manualmente para ver o erro:\033[0m"
+                    echo -e "\033[1;33m  screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 10000 --max-connections-for-client 8\033[0m"
+                fi
+            fi
+            sleep 3
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '100' ]]; then
+        if pgrep -f 'badvpn-udpgw' > /dev/null 2>&1; then
+            clear
+                tn_box_top "BADVPN PRO"
+            echo ""
+            echo -ne "\033[1;32mQUAL PORTA DESEJA ULTILIZAR \033[1;33m?\033[1;37m: "
+            read porta
+            [[ -z "$porta" ]] && {
+                echo ""
+                echo -e "\033[1;31mPorta invalida!"
+                sleep 2
+                clear
+                menu
+            }
+            echo ""
+            echo -e "\033[1;32mINICIANDO O BADVPN NA PORTA \033[1;31m$porta\033[1;33m"
+            echo ""
+            fun_abrirptbad() {
+                sleep 1
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:$porta --max-clients 10000 --max-connections-for-client 8
+                sleep 1
+            }
+            fun_abrirptbad
+            echo ""
+            echo -e "\033[1;32mBADVPN ATIVADO COM SUCESSO\033[1;33m"
+            sleep 2
+            fun_badvpn
+        else
+            clear
+            echo -e "\033[1;31mFUNCAO INDISPONIVEL\n\n\033[1;33mATIVE O BADVPN PRIMEIRO !\033[1;33m"
+            sleep 2
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '0' ]]; then
+        echo ""
+        echo -e "\033[1;31mRetornando...\033[0m"
+        sleep 1
+        badpro1
+    else
+        echo ""
+        echo -e "\033[1;31mOpcao invalida !\033[0m"
+        sleep 1
+        fun_badvpn
+    fi
+}
+fun_badvpn

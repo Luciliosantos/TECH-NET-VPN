@@ -1,0 +1,21 @@
+#!/bin/bash
+# verifatt CORRIGIDO — verificacao de versao local
+# ANTES: baixava http://ssh-plus.tk/script/versao (dominio do antigo
+# dono, MORTO) todo dia via cron @daily. Nunca funcionava.
+# AGORA: compara a versao instalada (/bin/versao) com a versao do
+# projeto local salvo no VPS (registrado pelo instalador em
+# /etc/technetvpn/source_dir). So avisa; nao faz atualizacao
+# automatica sem comando do dono.
+clear
+[[ -e /home/versao ]] && rm /home/versao
+SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
+[[ -z "$SRC" ]] && exit 0
+[[ -f "$SRC/Modulos/versao" ]] || exit 0
+nova=$(sed -n '1 p' "$SRC/Modulos/versao" | sed -e 's/[^0-9]//ig')
+instalada=$(sed -n '1 p' /bin/versao 2>/dev/null | sed -e 's/[^0-9]//ig')
+if [[ -n "$nova" && -n "$instalada" && "$instalada" != "$nova" ]]; then
+    mkdir -p /etc/technetvpn
+    echo "Atualizacao disponivel: instalada=$instalada projeto=$nova ($(date))" >> /etc/technetvpn/aviso_versao.log
+    echo "Atualizacao do painel disponivel ($nova). Rode o instalador do projeto para atualizar." > /home/versao
+fi
+exit 0

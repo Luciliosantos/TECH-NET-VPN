@@ -1,0 +1,49 @@
+#!/bin/bash
+[[ -f /bin/tnui ]] && source /bin/tnui
+# CORRIGIDO: o arquivo original (tambem quebrado no repositorio
+# de origem) vinha SEM o cabecalho da funcao e sem o laco "while",
+# com um "}" solto no final — erro de sintaxe que fazia a opcao B
+# (menu BADVPN) quebrar ao abrir. Estrutura restaurada no padrao
+# dos demais modulos.
+fun_conexao() {
+    while true $x != "ok"
+    do
+        # --- render padronizado TNUi ---
+studp=$(pgrep -f 'badvpn-udpgw' > /dev/null && echo 1 || echo 0)
+tn_logo
+tn_box_top "BADVPN • UDP"
+tn_linec "${TN_C_M}Ative o BadVPN antes de abrir todas as portas.${TN_R}"
+tn_box_sep "OPCOES"
+tn_item "01" "BadVPN Pro (ativar/parar)" "${studp}" "" "" ""
+tn_item "02" "BadVPN Gerenciador" "" "" "" ""
+tn_item "03" "BadVPN ARM (UDP jogos/voip)" "" "" ""
+tn_item "04" "Abrir todas as portas" "" "" ""
+tn_item "00" "« Voltar" "" "" "" ""
+tn_prompt; read x
+			tput cnorm
+			clear
+			case $x in
+			1 | 01)
+			badpro
+			;;
+			2 | 02)
+			badvpn2
+			;;
+			3 | 03)
+			badvpn3
+			;;
+			4 | 04)
+			badpro1
+			;;
+			0 | 00)
+			clear
+			menu
+			;;
+			*)
+			echo -e "\033[1;31mOpcao invalida !\033[0m"
+			sleep 2
+			;;
+			esac
+		done
+	}
+	fun_conexao

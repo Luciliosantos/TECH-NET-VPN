@@ -1,0 +1,178 @@
+#!/bin/bash
+#====================================================
+#	@TECHNETVPN — Instalador auxiliar (v1.1 corrigida)
+#  CORRECAO PRINCIPAL: os arquivos agora sao copiados do
+#  PROJETO LOCAL (ZIP extraido no VPS) em vez de wgets ao
+#  repositorio GitHub que estava OFFLINE (HTTP 404) —
+#  era a causa raiz da instalacao/ativacao falhar.
+#  Compativel com o fluxo original: mesmos argumentos
+#  (lst lst1 lst2 key1) e mesmas etapas (pastas, hosts,
+#  autostart, cron, servicos).
+#====================================================
+SRC="${PANEL_SOURCE_DIR:-}"
+[[ -z "$SRC" && -f /etc/technetvpn/source_dir ]] && SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
+[[ -z "$SRC" ]] && SRC=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+PANEL_REPO="${PANEL_REPO:-https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main}"
+
+mkdir -p /etc/technetvpn
+fun_get() { # $1 = caminho relativo no projeto  $2 = destino
+    local rel="$1" dst="$2"
+    if [[ -e "$SRC/$rel" ]]; then
+        cp -f "$SRC/$rel" "$dst" 2>/dev/null && return 0
+    fi
+    # repositorio remoto e apenas fallback OPCIONAL
+    wget -q -O "$dst" "$PANEL_REPO/$rel" 2>/dev/null && return 0
+    echo "AVISO instalacao: $rel ausente (local e remoto)" >>/etc/technetvpn/install.log 2>/dev/null
+    return 1
+}
+
+# CORRIGIDO: wgets com timeout (antes: sem -T, podia travar a
+# instalacao por varios minutos aguardando um servidor que nao
+# responde — foi o que a analise reproduziu na pratica)
+IP=$(wget -q -T 5 -t 1 -O- ipv4.icanhazip.com 2>/dev/null)
+IP2=$(wget -q -T 5 -t 1 -O- http://whatismyip.akamai.com/ 2>/dev/null)
+if [[ -n "$IP" && -n "$IP2" && "$IP" != "$IP2" ]]; then
+    ipdovps="$IP2"
+else
+    ipdovps="${IP:-$(hostname -I 2>/dev/null | awk '{print $1}')}"
+fi
+echo -e "$ipdovps" >/etc/IP
+lst=$1 && lst1=$2 && lst2=$3 && key1=$4 && key2=crz
+echo -e "America/Sao_Paulo" >/etc/timezone
+ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime >/dev/null 2>&1
+dpkg-reconfigure --frontend noninteractive tzdata >/dev/null 2>&1
+[[ -z $lst1 ]] && {
+	rm -rf $_Ink/list >/dev/null 2>&1 && exit 0
+}
+[[ ! -d /etc/SSHPlus ]] && mkdir /etc/SSHPlus
+[[ ! -d /etc/SSHPlus/v2ray ]] && mkdir /etc/SSHPlus/v2ray
+[[ ! -d /etc/SSHPlus/senha ]] && mkdir /etc/SSHPlus/senha
+[[ ! -e /etc/SSHPlus/Exp ]] && touch /etc/SSHPlus/Exp
+[[ ! -d /etc/SSHPlus/userteste ]] && mkdir /etc/SSHPlus/userteste
+[[ ! -d /etc/SSHPlus/.tmp ]] && mkdir /etc/SSHPlus/.tmp
+# CORRIGIDO (v1.2.1): assets de instalacao ficam guardados NO VPS para os
+# modulos usarem sem depender do repositorio antigo (cert/key/stunnel do
+# SSL Tunnel, EasyRSA do OpenVPN, init do squid, botssh do BOT TESTE)
+[[ ! -d /etc/SSHPlus/inst ]] && mkdir /etc/SSHPlus/inst
+for _a in cert key stunnel EasyRSA-3.0.1.tgz squid3 sshd_config; do
+    # CORRIGIDO (v1.2.1): local primeiro, repositorio como alternativa —
+    # instalacao so-GitHub tambem recebe os assets (antes: so local)
+    fun_get "Install/$_a" "/etc/SSHPlus/inst/$_a" || true
+done
+fun_get "Sistema/botssh" "/etc/SSHPlus/inst/botssh" || true
+[[ ! -d /etc/bot ]] && mkdir /etc/bot
+[[ ! -d /etc/bot/info-users ]] && mkdir /etc/bot/info-users
+[[ ! -d /etc/bot/arquivos ]] && mkdir /etc/bot/arquivos
+[[ ! -d /etc/bot/revenda ]] && mkdir /etc/bot/revenda
+[[ ! -d /etc/bot/suspensos ]] && mkdir /etc/bot/suspensos
+[[ ! -d /etc/rec ]] && mkdir /etc/rec
+[[ ! -e /etc/bot/lista_ativos ]] && touch /etc/bot/lista_ativos
+[[ ! -e /etc/bot/lista_suspensos ]] && touch /etc/bot/lista_suspensos
+# CORRIGIDO: marca do antigo dono (@scottssh) removida
+echo -e 'by: @TECHNETVPN' >/usr/lib/sshplus && cat /usr/lib/sshplus >$lst2/licence && cat /usr/lib/sshplus > /etc/SSHPlus/.tmp/crazy
+netstat -nplt | grep -w 'apache2' | grep -w '80' && sed -i "s/Listen 80/Listen 81/g" /etc/apache2/ports.conf && service apache2 restart
+[[ "$(grep -o '#Port 22' /etc/ssh/sshd_config)" == "#Port 22" ]] && sed -i "s;#Port 22;Port 22;" /etc/ssh/sshd_config && service ssh restart
+grep -v "^PasswordAuthentication" /etc/ssh/sshd_config >/tmp/passlogin && mv /tmp/passlogin /etc/ssh/sshd_config
+echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
+_dir1='/bin'
+_dir2='/etc/SSHPlus'
+rm $_dir2/ShellBot.sh $_dir2/cabecalho $_dir2/open.py $_dir2/proxy.py $_dir2/wsproxy.py >/dev/null 2>&1
+# CORRIGIDO (v1.2.1): removidos da lista os 8 modulos que NAO EXISTEM no
+# projeto corrigido (Autobackup, backup_mail.sh, badvpn, cabecalho,
+# dns-netflix.sh, ban.sh, prissh, prnet.sh). Se ficassem, o instalador
+# poderia baixar versoes ANTIGAS desses arquivos de um repositorio que
+# ainda as contenha. Nenhum menu do painel chama esses comandos.
+_mdls=("addhost" "ajuda" "alterarlimite" "alterarsenha" "tcptweaker.sh" "checkers" "utili" "multi" "apache2menu" "check" "chuser" "limit" "rps_cpu" "attscript" "badpro" "badpro1" "badvpn2" "badvpn3" "banner" "bashtop" "ddos" "blocksite" "blockt" "blockuser" "bot" "botssh" "conexao" "criarteste" "criarusuario" "delhost" "delscript" "detalhes" "droplimiter" "expcleaner" "fr" "infousers" "inst-botteste" "initcheck" "instsqd" "limiter" "menu" "menub" "tnui" "mudardata" "mtuning" "multi" "open.py" "otimizar" "painelv2ray" "proxy.py" "reiniciarservicos" "reiniciarsistema" "remover" "senharoot" "ShellBot.sh" "speedtest" "sshmonitor" "swapmemory" "trafegototal" "trojan-go" "uexpired" "userbackup" "verifatt" "verifbot" "v2raymanager" "webmin.sh" "websocket.sh" "wsproxy.py" "pkill.sh")
+for _arq in ${_mdls[@]}; do
+	[[ -e $_dir1/$_arq ]] && rm $_dir1/$_arq >/dev/null 2>&1
+	# CORRIGIDO: copia do projeto local (antes: wget em repositorio offline)
+	fun_get "Modulos/$_arq" "$_dir1/$_arq"
+	chmod +x $_dir1/$_arq 2>/dev/null
+done
+# CORRIGIDO: antes era um "mv" multiplo; como nao existe
+# em Modulos, o comando INTEIRO falhava e open.py/proxy.py/wsproxy.py
+# nunca chegavam ao /etc/SSHPlus. Agora move um por um.
+for _mv in cabecalho bot open.py proxy.py wsproxy.py; do
+	[[ -e "$_dir1/$_mv" ]] && mv -f "$_dir1/$_mv" "$_dir2/$_mv"
+done
+_arq_host="/etc/hosts"
+_host[0]="d1n212ccp6ldpw.cloudfront.net"
+_host[1]="dns.whatsapp.net"
+_host[2]="portalrecarga.vivo.com.br/recarga"
+_host[3]="navegue.vivo.com.br/controle/"
+_host[4]="navegue.vivo.com.br/pre/"
+_host[5]="www.whatsapp.net"
+_host[6]="/SSHPLUS?"
+for host in ${_host[@]}; do
+	if [[ "$(grep -w "$host" $_arq_host | wc -l)" = "0" ]]; then
+		# CORRIGIDO: "3i" nao inseria nada em arquivos hosts com menos
+		# de 3 linhas (reproduzido em teste). Entradas na linha 1 tem
+		# o mesmo efeito (todas apontam para 127.0.0.1).
+		sed -i "1i\127.0.0.1 $host" $_arq_host
+	fi
+done
+[[ ! -e /etc/autostart ]] && {
+	echo '#!/bin/bash
+clear
+#INICIO AUTOMATICO' >/etc/autostart
+	chmod +x /etc/autostart
+} || {
+	[[ $(ps x | grep "bot_plus" | grep -v grep | wc -l) != '0' ]] && screen -dmS bot_plus ./ShellBot.sh
+	for proc in $(ps x | grep 'dmS' | grep -v 'grep' | awk {'print $1'}); do
+		screen -r -S "$proc" -X quit
+done
+	screen -wipe >/dev/null
+	echo '#!/bin/bash
+clear
+#INICIO AUTOMATICO' >/etc/autostart
+	chmod +x /etc/autostart
+}
+crontab -r >/dev/null 2>&1
+(
+	crontab -l 2>/dev/null
+	echo "@daily /bin/verifatt"
+	echo "@reboot /etc/autostart"
+	echo "* * * * * /etc/autostart"
+	echo "0 */6 * * * /bin/uexpired"
+) | crontab -
+# CORRIGIDO: versao lida do projeto local (antes: wget em repositorio
+# offline). O arquivo Modulos/versao guarda so o numero (ex.: 32).
+_vlv=$(sed -n '1 p' "$SRC/Modulos/versao" 2>/dev/null | tr -d '\r\n' )
+[[ -z "$_vlv" ]] && _vlv=$(wget -q -T 5 -t 1 -O- "$PANEL_REPO/Modulos/versao" 2>/dev/null | tr -d '\r\n')
+[[ -z "$_vlv" ]] && _vlv="121"
+echo "$_vlv" > /bin/versao
+cat /bin/versao > /home/sshplus 2>/dev/null
+# CORRIGIDO: jq do projeto local (antes: wget em repositorio offline)
+fun_get "Install/jq-linux64" "$HOME/jq-linux64" && chmod +x "$HOME/jq-linux64" && mv -f "$HOME/jq-linux64" "$(which jq 2>/dev/null || echo /usr/bin/jq)"
+service cron restart >/dev/null 2>&1
+service ssh restart >/dev/null 2>&1
+[[ -d /var/www/html/openvpn ]] && service apache2 restart >/dev/null 2>&1
+rm -rf $lst1/list >/dev/null 2>&1
+mkdir -p /opt/sshplus
+echo > /opt/sshplus/sshplus
+# WebSocket e chaves: projeto local (antes: repositorio offline)
+cd /etc/SSHPlus/ && fun_get "Modulos/WebSocket" WebSocket && fun_get "Modulos/pub.key" pub.key && fun_get "Modulos/priv.pem" priv.pem && chmod 777 WebSocket && cd $HOME
+cd /etc/SSHPlus/ && fun_get "Modulos/proxydt" proxydt && chmod 777 proxydt && cd $HOME
+# ==========================================================
+# NOVO — correcao do indicador de status (bolinha verde):
+# 1) /bin/onlineapp: o MONITOR ONLINE apontava para um
+#    executavel que NAO EXISTIA no projeto. Agora existira
+#    de verdade e o status reflete o processo real.
+# 2) /bin/badvpn-udpgw: o badpro baixava de um link dropbox
+#    MORTO (com flag -o errada); o binario sempre esteve no
+#    projeto — agora e instalado direto dele.
+# ==========================================================
+fun_get "Install/onlineapp" "$_dir1/onlineapp" && chmod +x "$_dir1/onlineapp"
+case "$(uname -m)" in
+    x86_64|amd64)
+        fun_get "Install/badvpn-udpgw" "$_dir1/badvpn-udpgw" && chmod +x "$_dir1/badvpn-udpgw"
+        ;;
+esac
+# chuser/userscheck/checkuser: ANTES baixados do repositorio do
+# ANTIGO DONO (wellzin-blip/Painel-V2022). Agora veem junto
+# no projeto (Install/) — sem dependencia externa.
+fun_get "Install/chuser" "$_dir1/chuser" && chmod +x "$_dir1/chuser"
+fun_get "Install/userscheck" "$_dir1/userscheck" && chmod +x "$_dir1/userscheck"
+mkdir -p /usr/lib/checkuser && rm -f /usr/lib/checkuser/checkuser.py
+fun_get "Install/checkuser.py" "/usr/lib/checkuser/checkuser.py" && chmod +x /usr/lib/checkuser/checkuser.py
+exit 0

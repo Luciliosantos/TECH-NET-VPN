@@ -1,0 +1,120 @@
+#!/bin/bash
+[[ -f /bin/tnui ]] && source /bin/tnui
+clear
+fun_badvpn() {
+tn_box_top "BADVPN • GERENCIADOR"
+    echo ""
+    if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+        echo -e "\033[1;37mPORTAS\033[1;37m: \033[1;32m$(netstat -nplt | grep 'badvpn-ud' | awk {'print $4'} | cut -d: -f2 | xargs)"
+    else
+        sleep 0.1
+    fi
+    var_sks1=$(pgrep -f 'badvpn-udpgw' > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
+    echo ""
+    echo -e "\033[1;31m[\033[1;36m1\033[1;31m] \033[1;37m• \033[1;37mATIVAR BADVPN(PADRÃO 7300) $var_sks1 \033[0m"
+    echo -e "\033[1;31m[\033[1;36m2\033[1;31m] \033[1;37m• \033[1;37mABRIR PORTA\033[0m"
+    echo -e "\033[1;31m[\033[1;36m0\033[1;31m] \033[1;37m• \033[1;37mVOLTAR\033[0m"
+    echo ""
+    echo -ne "\033[1;32mO QUE DESEJA FAZER \033[1;37m?\033[1;37m "
+    read resposta
+    if [[ "$resposta" = '1' ]]; then
+        if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+            clear
+tn_box_top "BADVPN • GERENCIADOR"
+            echo ""
+            fun_stopbad () {
+                sleep 1
+                for pidudpvpn in $(screen -ls | grep ".udpvpn" | awk {'print $1'}); do
+                    screen -r -S "$pidudpvpn" -X quit
+				done
+                [[ $(grep -wc "udpvpn" /etc/autostart) != '0' ]] && {
+                    sed -i '/udpvpn/d' /etc/autostart
+                }
+                sleep 1
+                screen -wipe >/dev/null
+            }
+            echo -e "\033[1;32mDESATIVANDO O BADVPN\033[1;37m"
+            echo ""
+            fun_stopbad
+            echo ""
+            echo -e "\033[1;32mBADVPN DESATIVADO COM SUCESSO!\033[1;37m"
+            sleep 3
+	    clear
+            fun_badvpn
+        else
+            clear
+            echo -e "\033[1;32mINICIANDO O BADVPN... \033[0m\n"
+            fun_udpon () {
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 9000 --max-connections-for-client 5
+                [[ $(grep -wc "udpvpn" /etc/autostart) = '0' ]] && {
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 9000 --max-connections-for-client 5 --client-socket-sndbuf 10000" >> /etc/autostart
+                } || {
+                    sed -i '/udpvpn/d' /etc/autostart
+                    echo -e "pgrep -f 'badvpn-udpgw' || screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:7300 --max-clients 9000 --max-connections-for-client 5 --client-socket-sndbuf 10000" >> /etc/autostart
+                }
+                sleep 1
+            }
+            inst_udp () {
+                # CORRIGIDO: sem link dropbox morto; o binario vem com o instalador
+                if [[ ! -x "/bin/badvpn-udpgw" ]]; then
+                    echo -e "\033[1;31mFALHOU: /bin/badvpn-udpgw ausente (reinstale o painel).\033[0m"
+                    return 1
+                fi
+            }
+            echo ""
+            inst_udp
+            fun_udpon
+            echo ""
+            echo -e "\033[1;32mBADVPN ATIVADO COM SUCESSO\033[1;37m"
+            sleep 3
+	    clear
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '2' ]]; then
+        if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
+            clear
+                tn_box_top "BADVPN"
+            echo ""
+            echo -ne "\033[1;32mQUAL PORTA DESEJA ULTILIZAR \033[1;37m?\033[1;37m: "
+            read porta
+            [[ -z "$porta" ]] && {
+                echo ""
+                echo -e "\033[1;31mPorta invalida!"
+                sleep 2
+                clear
+                menu
+            }
+            echo ""
+            echo -e "\033[1;32mINICIANDO O BADVPN NA PORTA \033[1;31m$porta\033[1;37m"
+            echo ""
+            fun_abrirptbad() {
+                sleep 1
+                screen -dmS udpvpn /bin/badvpn-udpgw --listen-addr 127.0.0.1:$porta --max-clients 9000 --max-connections-for-client 5
+                sleep 1
+		
+            }
+            fun_abrirptbad
+            echo ""
+            echo -e "PORTA \033[1;32m$porta\033[1;37m ATIVADA COM SUCESSO"
+            sleep 2
+	    clear
+            fun_badvpn
+	    else
+            clear
+            echo -e "\033[1;31mFUNCAO INDISPONIVEL\n\n\033[1;37mATIVE O BADVPN PRIMEIRO !\033[1;37m"
+            sleep 2
+            fun_badvpn
+        fi
+    elif [[ "$resposta" = '0' ]]; then
+        echo ""
+        echo -e "\033[1;31mRetornando...\033[0m"
+        sleep 1
+        menu
+    else
+        echo ""
+        echo -e "\033[1;31mOpcao invalida !\033[0m"
+        sleep 1
+        fun_badvpn
+    fi
+}
+fun_badvpn
