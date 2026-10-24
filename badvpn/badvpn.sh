@@ -51,20 +51,12 @@ fun_udp1 () {
 	    inst_udp () {
 	        cd $HOME
 			apt-get install dos2unix -y
-            # CORRIGIDO: o binario badvpn-udpgw vem do PROJETO LOCAL quando
-            # disponivel (Install/badvpn-udpgw); o remoto fica como ultima
-            # alternativa — DEPENDENCIA EXTERNA (repositorio antigo)
-            SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
-            if [[ -n "$SRC" && -f "$SRC/Install/badvpn-udpgw" ]]; then
-                cp -f "$SRC/Install/badvpn-udpgw" $HOME/badvpn-udpgw
-            else
-                wget https://raw.githubusercontent.com/TH30R10N/PR0/main/badvpn/badvpn-udpgw -o /dev/null
-            fi
+            wget https://raw.githubusercontent.com/TH30R10N/PR0/main/badvpn/badvpn-udpgw -o /dev/null
 			wget https://raw.githubusercontent.com/TH30R10N/PR0/main/badvpn/antcrashvpn.sh -o /dev/null
 			dos2unix antcrashvpn.sh
 			mv -f $HOME /antcrashvpn.sh /bin/antcrashvpn.sh
             mv -f $HOME/badvpn-udpgw /bin/badvpn-udpgw
-            chmod +x /bin/badvpn-udpgw
+            chmod 777 /bin/badvpn-udpgw
 	   }
 	   fun_bar 'inst_udp'
 	   echo -e "\n\033[1;32mINICIANDO O BADVPN... \033[0m\n"

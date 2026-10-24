@@ -1,5 +1,4 @@
 #!/bin/bash
-[[ -f /bin/tnui ]] && source /bin/tnui
 #====================================================
 #	@TECHNETVPN
 #====================================================
@@ -104,7 +103,7 @@ fun_bar() {
 }
 fun_edithost() {
     clear
-        tn_box_top "ALTERAR HOST OVPN"
+    echo -e "\E[44;1;37m          ALTERAR HOST OVPN            \E[0m"
     echo ""
     echo -e "\033[1;33mHOST EM USO\033[1;37m: \033[1;32m$Host"
     echo ""

@@ -43,18 +43,8 @@ echo "================================================"
 ;;
     2)
     install dos2unix -y /dev/null
-    # CORRIGIDO: badvpn.sh vem do PROJETO LOCAL (o repositorio do antigo
-    # dono foi removido do fluxo — o arquivo existe em badvpn/badvpn.sh)
-    SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
-    if [[ -n "$SRC" && -f "$SRC/badvpn/badvpn.sh" ]]; then
-        cp -f "$SRC/badvpn/badvpn.sh" ./badvpn.sh
-    else
-        echo -e "\033[1;31mERRO: badvpn.sh nao encontrado no projeto local.\033[0m"
-        echo -e "\033[1;33mExtraia o ZIP completo do painel na VPS e reinstale.\033[0m"
-        sleep 3
-        menub
-    fi
-    chmod +x badvpn.sh
+    wget https://raw.githubusercontent.com/ScottBrabo/PR0/main/badvpn/badvpn.sh /dev/null
+    chmod 777 badvpn.sh
     ./badvpn.sh
 echo "================================================"
 ;;

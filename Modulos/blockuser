@@ -1,5 +1,4 @@
 #!/bin/bash
-[[ -f /bin/tnui ]] && source /bin/tnui
 clear
 ###############################################################
 #Programa para bloquear temporariamente e desbloquear contas de usuario"
@@ -9,7 +8,7 @@ clear
 clear
 while [  "$op"  !=  "3" ]
 do
-    tn_box_top "BLOCK TEMPORARY USER"
+echo -e "\E[44;1;37m             BLOCK TEMPORARY USER            \E[0m"
 echo " BLOQUEAR E DESBLOQUEAR USUÁRIO TEMPORARIAMENTE "
 echo -e "\n"
 echo -e "\033[1;34m[\033[1;37m01 •\033[1;34m]\033[1;37m ➩ \033[1;33mBLOQUEAR USUÁRIO \033[0;32m"

@@ -26,9 +26,7 @@ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32 >/dev/
 }
 apt update -y >/dev/null 2>&1
 apt install squid3=3.3.8-1ubuntu6 squid=3.3.8-1ubuntu6 squid3-common=3.3.8-1ubuntu6 -y >/dev/null 2>&1
-# CORRIGIDO: script init do squid vem do PROJETO LOCAL
-SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
-[[ -n "$SRC" && -f "$SRC/Install/squid3" ]] && cp -f "$SRC/Install/squid3" /etc/init.d/squid3
+wget -qO- https://github.com/Luciliosantos/TECH-NET-VPN/raw/main/Install/squid3 >/etc/init.d/squid3
 chmod +x /etc/init.d/squid3 >/dev/null 2>&1
 update-rc.d squid3 defaults >/dev/null 2>&1
 }

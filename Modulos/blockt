@@ -1,9 +1,8 @@
 #!/bin/bash
-[[ -f /bin/tnui ]] && source /bin/tnui
 clear
 IP=$(wget -qO- ipv4.icanhazip.com)
 arq="/etc/Plus-torrent"
-    tn_box_top "FIREWALL BLOQUEIO TORRENT"
+echo -e "\E[44;1;37m           FIREWALL BLOQUEIO TORRENT           \E[0m"
 echo ""
 if [[ -e "$arq" ]]; then
 	fun_fireoff () {

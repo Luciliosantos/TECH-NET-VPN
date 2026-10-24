@@ -1,70 +1,82 @@
 #!/bin/bash
-# FERRAMENTAS — TECH NET VPN
-# CORRIGIDO (v1.2.1): o arquivo original vinha TRUNCADO do repositorio
-# de origem (fragmento sem cabecalho de funcao, com "done"/"}" soltos e
-# um trecho de fun_conexao colado no final). Era a causa da opcao 17
-# do menu principal (Ferramentas) quebrar ao abrir. Reestruturado por
-# completo no padrao TNUi, com os 11 recursos originais mapeados para
-# os modulos reais do projeto.
-[[ -f /bin/tnui ]] && source /bin/tnui
-
-_umin () { # instalar ferramenta de monitoramento se ausente
-   local tool="$1" pkg="$1"
-   command -v "$tool" >/dev/null 2>&1 && return 0
-   echo ""
-   tn_info "${tool} não está instalado."
-   echo -ne " ${TN_C_C}➤${TN_R} ${TN_C_N}Instalar agora via apt? [s/n] :${TN_R} "
-   read -r r
-   [[ "$r" == "s" || "$r" == "S" ]] || { tn_erro "Operação cancelada."; sleep 2; return 1; }
-   apt-get install -y "$pkg" >/dev/null 2>&1 || { tn_erro "Falha ao instalar $pkg (verifique a rede/apt)."; sleep 2; return 1; }
-   tn_ok "$pkg instalado."
+    clear
+    echo -e "\033[01;31m\033[1;31m\033[5;34;47m                      FERRAMENTAS                      \033[1;33m \033[0m\033[01;31m║"
+    echo -e "\033[01;31m\033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 01 •\033[1;34m]\033[1;37m ➩  \033[1;33mBLOQUEADOR DE SITE \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 02 •\033[1;34m]\033[1;37m ➩  \033[1;33mBLOQUEIO TORRENT \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 03 •\033[1;34m]\033[1;37m ➩  \033[1;33mANTI ATAQUE DDOS \033[01;31m $sts2\033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 04 •\033[1;34m]\033[1;37m ➩  \033[1;33mBOT REVENDA \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 05 •\033[1;34m]\033[1;37m ➩  \033[1;33mSISTEMA AVANÇADO \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 06 •\033[1;34m]\033[1;37m ➩  \033[1;33mTRAFEGO TOTAL \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 07 •\033[1;34m]\033[1;37m ➩  \033[1;33mBLOQUEAR USUARIO \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 08 •\033[1;34m]\033[1;37m ➩  \033[1;33mMONITORAR TRÁFEGO DE REDE \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 09 •\033[1;34m]\033[1;37m ➩  \033[1;33mMONITORAR PROCESSOS ATIVOS \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 10 •\033[1;34m]\033[1;37m ➩  \033[1;33mMONITORAR SISTEMA COMPLETO \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 11 •\033[1;34m]\033[1;37m ➩  \033[1;33mMONITORAR BANDA POR PROCESSOS \033[0m"
+    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 00 •\033[1;34m]\033[1;37m ➩  \033[1;33mVOLTAR  \033[1;32m<\033[1;33m<\033[1;31m< \033[0m"
+    echo -e "\033[01;31m\033[0m"
+    echo -e "\033[0;36m░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░\033[0m"
+			tput civis
+			echo -ne "\033[1;31m➤ \033[1;32mESCOLHA OPÇÃO DESEJADA\033[1;33m\033[1;31m\033[1;37m : ";
+			read x
+			tput cnorm
+			clear
+			case $x in
+			1 | 01)
+			blocksite
+			;;
+			2 | 02)
+			blockt
+			;;
+			3 | 03)
+			ddos
+			;;
+			4 | 04)
+			initbot
+			;;
+			5 | 05) 
+			multi
+			;;
+			6 | 06)
+			trafegototal
+			;;
+			7 | 07)
+			blockuser 
+			;;
+			8 | 08)
+			clear
+			echo -e "\033[1;33mPARA SAIR CLICK CTRL + C\033[1;36m"
+			sleep 5s
+			apt install slurm -y && slurm -i eth0
+			;;
+			10 | 10)
+			clear
+			echo -e "\033[1;33mPARA SAIR CLICK CTRL + C\033[1;36m"
+			sleep 5s
+			apt install htop -y && htop
+			;;
+			11 | 11)
+			clear
+			echo -e "\033[1;33mPARA SAIR CLICK CTRL + C\033[1;36m"
+			sleep 5s
+			apt install glances -y && glances
+			;;
+			12 | 12)
+			clear
+			echo -e "\033[1;33mPARA SAIR CLICK CTRL + C\033[1;36m"
+			sleep 5s
+			apt install nethogs -y && nethogs
+			;;
+			0 | 00)
+			clear
+			menu
+			;;
+			*)
+			echo -e "\033[1;31mOpcao invalida !\033[0m"
+			sleep 2
+			;;
+			esac
+		done
+	}
+	fun_conexao
 }
-
-fun_utili () {
-while true
-do
-   clear
-   local st_tor st_ddos st_rev
-   [[ -e /etc/Plus-torrent ]] && st_tor=1 || st_tor=0
-   pgrep -x fail2ban-server >/dev/null 2>&1 && st_ddos=1 || st_ddos=0
-   pgrep -f 'bot_rev' >/dev/null 2>&1 && st_rev=1 || st_rev=0
-   tn_logo
-   tn_box_top "FERRAMENTAS"
-   tn_box_sep "PROTECAO"
-   tn_item "01" "Bloqueador de site" "" "02" "Bloqueio torrent" "${st_tor}"
-   tn_item "03" "Anti ataque DDoS" "${st_ddos}" "04" "Bot revenda" "${st_rev}"
-   tn_box_sep "SISTEMA"
-   tn_item "05" "Sistema avançado" "" "06" "Trafego total" ""
-   tn_item "07" "Bloquear usuario" "" "" "" ""
-   tn_box_sep "MONITORAMENTO"
-   tn_item "08" "Trafego de rede (nload)" "" "09" "Processos ativos (bashtop)" ""
-   tn_item "10" "Sistema completo (htop)" "" "11" "Banda por processo (nethogs)" ""
-   tn_item "00" "« Voltar" "" "" "" ""
-   tn_box_end
-   tn_prompt
-   read -r x
-   case "$x" in
-      1|01) clear; blocksite ;;
-      2|02) clear; blockt ;;
-      3|03) clear; ddos ;;
-      4|04) clear; bot ;;
-      5|05) clear; mtuning ;;
-      6|06) clear; trafegototal ;;
-      7|07) clear; blockuser ;;
-      8|08) clear
-            _umin nload || { continue; }
-            echo -e "\033[1;32mPARA SAIR PRESSIONE CTRL + C\033[1;36m"; sleep 2
-            nload ;;
-      9|09) clear; bashtop ;;
-      10)   clear
-            _umin htop || { continue; }
-            htop ;;
-      11)   clear
-            _umin nethogs || { continue; }
-            nethogs ;;
-      0|00) clear; menu ;;
-      *) tn_erro "Opção inválida !"; sleep 2 ;;
-   esac
-done
-}
-fun_utili

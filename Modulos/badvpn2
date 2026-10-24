@@ -73,7 +73,7 @@ tn_box_top "BADVPN • GERENCIADOR"
     elif [[ "$resposta" = '2' ]]; then
         if ps x | grep -w udpvpn | grep -v grep 1>/dev/null 2>/dev/null; then
             clear
-                tn_box_top "BADVPN"
+            echo -e "\E[44;1;37m            BADVPN             \E[0m"
             echo ""
             echo -ne "\033[1;32mQUAL PORTA DESEJA ULTILIZAR \033[1;37m?\033[1;37m: "
             read porta
