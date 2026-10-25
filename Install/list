@@ -50,6 +50,16 @@ dpkg-reconfigure --frontend noninteractive tzdata >/dev/null 2>&1
 [[ ! -e /etc/SSHPlus/Exp ]] && touch /etc/SSHPlus/Exp
 [[ ! -d /etc/SSHPlus/userteste ]] && mkdir /etc/SSHPlus/userteste
 [[ ! -d /etc/SSHPlus/.tmp ]] && mkdir /etc/SSHPlus/.tmp
+# CORRIGIDO (v1.2.1): assets de instalacao ficam guardados NO VPS para os
+# modulos usarem sem depender do repositorio antigo (cert/key/stunnel do
+# SSL Tunnel, EasyRSA do OpenVPN, init do squid, botssh do BOT TESTE)
+[[ ! -d /etc/SSHPlus/inst ]] && mkdir /etc/SSHPlus/inst
+for _a in cert key stunnel EasyRSA-3.0.1.tgz squid3 sshd_config; do
+    # CORRIGIDO (v1.2.1): local primeiro, repositorio como alternativa —
+    # instalacao so-GitHub tambem recebe os assets (antes: so local)
+    fun_get "Install/$_a" "/etc/SSHPlus/inst/$_a" || true
+done
+fun_get "Sistema/botssh" "/etc/SSHPlus/inst/botssh" || true
 [[ ! -d /etc/bot ]] && mkdir /etc/bot
 [[ ! -d /etc/bot/info-users ]] && mkdir /etc/bot/info-users
 [[ ! -d /etc/bot/arquivos ]] && mkdir /etc/bot/arquivos
@@ -67,14 +77,19 @@ echo "PasswordAuthentication yes" >>/etc/ssh/sshd_config
 _dir1='/bin'
 _dir2='/etc/SSHPlus'
 rm $_dir2/ShellBot.sh $_dir2/cabecalho $_dir2/open.py $_dir2/proxy.py $_dir2/wsproxy.py >/dev/null 2>&1
-_mdls=("addhost" "ajuda" "alterarlimite" "alterarsenha" "tcptweaker.sh" "checkers" "utili" "multi" "apache2menu" "check" "chuser" "limit" "rps_cpu" "attscript" "Autobackup" "backup_mail.sh" "badvpn" "badpro" "badpro1" "badvpn2" "badvpn3" "banner" "bashtop" "ddos" "blocksite" "blockt" "blockuser" "bot" "botssh" "cabecalho" "conexao" "criarteste" "criarusuario" "delhost" "delscript" "detalhes" "dns-netflix.sh" "droplimiter" "expcleaner" "ban.sh" "fr" "infousers" "inst-botteste" "initcheck" "instsqd" "limiter" "menu" "menub" "tnui" "mudardata" "mtuning" "multi" "open.py" "otimizar" "painelv2ray" "prissh" "prnet.sh" "proxy.py" "reiniciarservicos" "reiniciarsistema" "remover" "senharoot" "ShellBot.sh" "speedtest" "sshmonitor" "swapmemory" "trafegototal" "trojan-go" "uexpired" "userbackup" "verifatt" "verifbot" "v2raymanager" "webmin.sh" "websocket.sh" "wsproxy.py" "pkill.sh")
+# CORRIGIDO (v1.2.1): removidos da lista os 8 modulos que NAO EXISTEM no
+# projeto corrigido (Autobackup, backup_mail.sh, badvpn, cabecalho,
+# dns-netflix.sh, ban.sh, prissh, prnet.sh). Se ficassem, o instalador
+# poderia baixar versoes ANTIGAS desses arquivos de um repositorio que
+# ainda as contenha. Nenhum menu do painel chama esses comandos.
+_mdls=("addhost" "ajuda" "alterarlimite" "alterarsenha" "tcptweaker.sh" "checkers" "utili" "multi" "apache2menu" "check" "chuser" "limit" "rps_cpu" "attscript" "badpro" "badpro1" "badvpn2" "badvpn3" "banner" "bashtop" "ddos" "blocksite" "blockt" "blockuser" "bot" "botssh" "conexao" "criarteste" "criarusuario" "delhost" "delscript" "detalhes" "droplimiter" "expcleaner" "fr" "infousers" "inst-botteste" "initcheck" "instsqd" "limiter" "menu" "menub" "tnui" "mudardata" "mtuning" "multi" "open.py" "otimizar" "painelv2ray" "proxy.py" "reiniciarservicos" "reiniciarsistema" "remover" "senharoot" "ShellBot.sh" "speedtest" "sshmonitor" "swapmemory" "trafegototal" "trojan-go" "uexpired" "userbackup" "verifatt" "verifbot" "v2raymanager" "webmin.sh" "websocket.sh" "wsproxy.py" "pkill.sh")
 for _arq in ${_mdls[@]}; do
 	[[ -e $_dir1/$_arq ]] && rm $_dir1/$_arq >/dev/null 2>&1
 	# CORRIGIDO: copia do projeto local (antes: wget em repositorio offline)
 	fun_get "Modulos/$_arq" "$_dir1/$_arq"
 	chmod +x $_dir1/$_arq 2>/dev/null
 done
-# CORRIGIDO: antes era um "mv" multiplo; como "cabecalho" nao existe
+# CORRIGIDO: antes era um "mv" multiplo; como nao existe
 # em Modulos, o comando INTEIRO falhava e open.py/proxy.py/wsproxy.py
 # nunca chegavam ao /etc/SSHPlus. Agora move um por um.
 for _mv in cabecalho bot open.py proxy.py wsproxy.py; do
@@ -123,7 +138,8 @@ crontab -r >/dev/null 2>&1
 # CORRIGIDO: versao lida do projeto local (antes: wget em repositorio
 # offline). O arquivo Modulos/versao guarda so o numero (ex.: 32).
 _vlv=$(sed -n '1 p' "$SRC/Modulos/versao" 2>/dev/null | tr -d '\r\n' )
-[[ -z "$_vlv" ]] && _vlv="32"
+[[ -z "$_vlv" ]] && _vlv=$(wget -q -T 5 -t 1 -O- "$PANEL_REPO/Modulos/versao" 2>/dev/null | tr -d '\r\n')
+[[ -z "$_vlv" ]] && _vlv="121"
 echo "$_vlv" > /bin/versao
 cat /bin/versao > /home/sshplus 2>/dev/null
 # CORRIGIDO: jq do projeto local (antes: wget em repositorio offline)
@@ -135,7 +151,9 @@ rm -rf $lst1/list >/dev/null 2>&1
 mkdir -p /opt/sshplus
 echo > /opt/sshplus/sshplus
 # WebSocket e chaves: projeto local (antes: repositorio offline)
-cd /etc/SSHPlus/ && fun_get "Modulos/WebSocket" WebSocket && fun_get "Modulos/pub.key" pub.key && fun_get "Modulos/priv.pem" priv.pem && chmod 777 WebSocket && cd $HOME
+cd /etc/SSHPlus/ && fun_get "Modulos/WebSocket" WebSocket && chmod 777 WebSocket && cd $HOME
+# As chaves pub.key e priv.pem nao sao distribuidas pelo repositorio publico.
+# Preserve as chaves ja instaladas; nao tente baixa-las publicamente.
 cd /etc/SSHPlus/ && fun_get "Modulos/proxydt" proxydt && chmod 777 proxydt && cd $HOME
 # ==========================================================
 # NOVO — correcao do indicador de status (bolinha verde):

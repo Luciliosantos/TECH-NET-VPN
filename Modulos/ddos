@@ -88,7 +88,9 @@ echo -e "\033[1;32mINSTALANDO"
 echo ""
 fun_bar "apt-get install fail2ban -y"
 cd $HOME
-wget -O fail2ban https://www.dropbox.com/s/qtz4aihjnwpth7y/fail2ban-0.9.4.tar.gz?dl=0 -o /dev/null
+# CORRIGIDO: fail2ban agora vem do repositorio oficial do Ubuntu (apt)
+# — antes: tar.gz no Dropbox do antigo dono (link morto)
+apt-get install fail2ban -y > /dev/null 2>&1
 tar -xf $HOME/fail2ban
 cd $HOME/fail2ban-0.9.4
 ./setup.py install > /dev/null 2>&1

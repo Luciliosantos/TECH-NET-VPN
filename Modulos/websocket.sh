@@ -339,7 +339,7 @@ if __name__ == '__main__':
     main()
 EOF
 
-screen -dmS pythonwe python proxy.py -p 80&
+screen -dmS pythonwe python3 proxy.py -p 80&
 
 }
 fun_bar 'inst_py'

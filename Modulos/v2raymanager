@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ -f /bin/tnui ]] && source /bin/tnui
 #====================================================
 #
 #====================================================
@@ -54,7 +55,7 @@ msg17='\033[1;37m\033[1;33m(Sem imformação - Para Cancelar Digite CRTL + C)\03
     mv -f ${USRdatabase}tmp ${USRdatabase}
 clear
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-    echo -e "\E[44;1;37m           ESCOLHA O PROTOCOLO V2RAY             \E[0m"
+        tn_box_top "ESCOLHA O PROTOCOLO V2RAY"
     echo -e "\033[1;37m• \033[1;33m[03] PROTOCOLO VMESS\033[1;31m"
     echo -e "\033[1;37m• \033[1;33m[24] PROTOCOLO VLESS\033[1;31m"
     echo -e "\033[1;37m• \033[1;33mEnsira seu domínio, Após digite 1 e Ensira seu domínio novamente \033[1;31m"
@@ -70,7 +71,7 @@ echo "DIGITE SEU DOMÍNIO : "; read dm
 echo "DIGITE O PROXY : "; read px
 sed -i "44 s;$dm;$px;g" /etc/v2ray/config.json
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-    echo -e "\E[44;1;37m            INFORMAÇÃO DE CONTA             \E[0m"
+        tn_box_top "INFORMAÇÃO DE CONTA"
     v2ray info
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     echo -e "\033[1;37m• \033[1;33mEnter Para Continuar\033[1;31m" && read enter
@@ -78,7 +79,7 @@ sed -i "44 s;$dm;$px;g" /etc/v2ray/config.json
     }
 
     protocolv2ray () {
-    echo -e "\E[44;1;37m            ALTERAR PROTOCOLO V2RAY             \E[0m"
+        tn_box_top "ALTERAR PROTOCOLO V2RAY"
     echo -e "\033[1;37m• \033[1;33mEscolha a opção 24 e coloque o domínio do seu IP\033[1;31m"
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     v2ray stream
@@ -95,14 +96,14 @@ sed -i "44 s;$dm;$px;g" /etc/v2ray/config.json
     fun_v2raymanager
     }
     portv () {
-    echo -e "\E[44;1;37m            ALTERAR PORTA V2RAY             \E[0m"
+        tn_box_top "ALTERAR PORTA V2RAY"
     v2ray port
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     echo -e "\033[1;37m• \033[1;33mEnter Para Continuar\033[1;31m" && read enter
     fun_v2raymanager
     }
     stats () {
-    echo -e "\E[44;1;37m            ESTATÍSTICAS DE CONSUMO             \E[0m"
+        tn_box_top "ESTATÍSTICAS DE CONSUMO"
     v2ray stats
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     echo -e "\033[1;37m• \033[1;33mEnter Para Continuar\033[1;31m" && read enter
@@ -117,7 +118,7 @@ sed -i "44 s;$dm;$px;g" /etc/v2ray/config.json
     fun_v2raymanager
     }
     infocuenta () {
-    echo -e "\E[44;1;37m            INFORMAÇÃO DE CONTA             \E[0m"
+        tn_box_top "INFORMAÇÃO DE CONTA"
     v2ray info
     echo -e "\033[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
     echo -e "\033[1;37m• \033[1;33mEnter Para Continuar\033[1;31m" && read enter
@@ -490,43 +491,27 @@ echo "App: https://apps.apple.com/br/app/fair-vpn/id1533873488"
 		while true $x != "ok"; do
 			[[ ! -e '/home/sshplus' ]] && exit 0
 			clear
-			figlet "V2Ray-PRO" | lolcat
-tput setaf 7 ; tput setab 4 ; tput bold ; printf '%55s%s%-12s\n' "V2RAY PRO @SCOTTSSH " ; tput sgr0
-echo ""
-echo "Para Ativar o (V2RAY) é obrigatório que portas 80 e 443 estejam DESATIVADAS"
-echo "" 
-			xv2ray1=`if netstat -tunlp |grep v2ray 1> /dev/null 2> /dev/null; then
-			echo -e "\e[92m ATIVADO"
-			else
-			echo -e "\e[91m DESATIVADO"
-			fi`;
-            echo -e "\033[1;32mSERVICO: \033[1;33mV2RAY \033[1;32m$xv2ray1\033[1;37m" 
-			xv2ray=`if netstat -tunlp |grep v2ray 1> /dev/null 2> /dev/null; then
-			echo -e "\033[1;32m◉ "
-			else
-			echo -e "\033[1;31m○ "
-			fi`;          
-			echo -e "╔═════════════════════•⊱✦⊰•═════════════════════╗" | lolcat
+			tn_logo
+			tn_box_top "V2RAY • GERENCIADOR"
+			xv2ray=$(tn_svc 'v2ray')
+			tn_linec "${TN_C_M}Serviço:${TN_R} ${TN_C_N}V2Ray${TN_R}  $( [[ "$xv2ray" == 1 ]] && tn_on || { [[ "$xv2ray" == 2 ]] && tn_wait || tn_off; } )"
+			tn_linec "${TN_C_M}Requisito:${TN_R} ${TN_C_N}portas 80/443 livres para o V2Ray${TN_R}"
+			tn_box_bar
 			echo ""
-echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mCRIAR USUARIO V2RAY\033[1;31m
-[\033[1;36m02\033[1;31m] \033[1;37m• \033[1;33mREMOVER USUARIO \033[1;31m
-[\033[1;36m03\033[1;31m] \033[1;37m• \033[1;33mMOSTAR USUARIOS CADASTRADO\033[1;31m
-[\033[1;36m04\033[1;31m] \033[1;37m• \033[1;33mINFORMAÇÕES DE CONEXÃO \033[1;31m
-[\033[1;36m05\033[1;31m] \033[1;37m• \033[1;33mESTATÍSTICAS DE CONSUMO\033[1;31m
-[\033[1;36m06\033[1;31m] \033[1;37m• \033[1;33mLIMITAR USUÁRIO POR CONSUMO\e[91m\033[1;31m
-[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mREMOVER VENCIDOS $statgen\033[1;31m
-[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mALTERAR PROTOCOLO\033[1;31m
-[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mATIVAR TLS\033[1;31m
-[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;33mALTERAR PORTA V2RAY\033[1;31m 
-[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mINSTALAR V2RAY $xv2ray\033[1;31m
-[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;33mDESINSTALAR V2RAY\033[1;31m
-[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;33mVOLTAR \033[1;32m<\033[1;33m<\033[1;31m< \033[1;31m"
-
+			echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mCRIAR USUARIO V2RAY\033[1;31m"
+			echo -e "[\033[1;36m02\033[1;31m] \033[1;37m• \033[1;33mREMOVER USUARIO \033[1;31m"
+			echo -e "[\033[1;36m03\033[1;31m] \033[1;37m• \033[1;33mMOSTAR USUARIOS CADASTRADO\033[1;31m"
+			echo -e "[\033[1;36m04\033[1;31m] \033[1;37m• \033[1;33mINFORMAÇÕES DE CONEXÃO \033[1;31m"
+			echo -e "[\033[1;36m05\033[1;31m] \033[1;37m• \033[1;33mESTATÍSTICAS DE CONSUMO\033[1;31m"
+			echo -e "[\033[1;36m06\033[1;31m] \033[1;37m• \033[1;33mLIMITAR USUÁRIO POR CONSUMO\033[1;31m"
+			echo -e "[\033[1;36m07\033[1;31m] \033[1;37m• \033[1;33mREMOVER VENCIDOS $statgen\033[1;31m"
+			echo -e "[\033[1;36m08\033[1;31m] \033[1;37m• \033[1;33mALTERAR PROTOCOLO\033[1;31m"
+			echo -e "[\033[1;36m09\033[1;31m] \033[1;37m• \033[1;33mATIVAR TLS\033[1;31m"
+			echo -e "[\033[1;36m10\033[1;31m] \033[1;37m• \033[1;33mALTERAR PORTA V2RAY\033[1;31m "
+			echo -e "[\033[1;36m11\033[1;31m] \033[1;37m• \033[1;33mINSTALAR V2RAY $( [[ "$xv2ray" == 1 ]] && echo -e '\033[1;32m●' || echo -e '\033[1;31m○' )\033[1;31m"
+			echo -e "[\033[1;36m12\033[1;31m] \033[1;37m• \033[1;33mDESINSTALAR V2RAY\033[1;31m"
+			echo -e "[\033[1;36m00\033[1;31m] \033[1;37m• \033[1;33mVOLTAR \033[1;32m<\033[1;33m<\033[1;31m< \033[1;31m"
 			echo ""
-			echo -e "╚═════════════════════•⊱✦⊰•═════════════════════╝" | lolcat
-			echo ""
-			tput civis
-			echo -ne "\033[1;32mESCOLHA UMA OPÇÃO \033[1;33m»\033[1;31m\033[1;37m "
 			read x
 			tput cnorm
 			clear
@@ -587,4 +572,3 @@ echo -e "\033[1;31m[\033[1;36m01\033[1;31m] \033[1;37m• \033[1;33mCRIAR USUARI
 	}
     fun_v2raymanager
 
-}

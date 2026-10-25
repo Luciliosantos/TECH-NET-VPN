@@ -10,8 +10,21 @@
     echo -e "\033[1;32mINICIANDO BOT TESTE \033[0m\n"
     cd $HOME/BOT
     rm -rf $HOME/BOT/botssh
-    wget https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Sistema/botssh >/dev/null 2>&1
-    chmod 777 botssh
+    # CORRIGIDO: botssh vem do PROJETO LOCAL (o instalador copia para
+    # /etc/SSHPlus/inst/botssh) — antes: repositorio antigo no GitHub
+    if [[ -f /etc/SSHPlus/inst/botssh ]]; then
+        cp -f /etc/SSHPlus/inst/botssh $HOME/BOT/botssh
+    else
+        SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
+        if [[ -n "$SRC" && -f "$SRC/Sistema/botssh" ]]; then
+            cp -f "$SRC/Sistema/botssh" $HOME/BOT/botssh
+        else
+            echo -e "\033[1;31mERRO: botssh ausente no projeto local.\033[0m"
+            sleep 3
+            menu
+        fi
+    fi
+    chmod +x botssh
     echo ""
     sleep 1
     screen -dmS bot_teste ./botssh $token > /dev/null 2>&1

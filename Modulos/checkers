@@ -1,38 +1,34 @@
 #!/bin/bash
+# CHECKUSER — TECH NET VPN
+# CORRIGIDO (v1.2.1): menu padronizado TNUi. As opcoes 2-4 continuam
+# disponiveis como ADDONS EXTERNOS opcionais (repositorios de terceiros
+# do ecossistema checkuser) — agora com aviso explicito antes de baixar.
+[[ -f /bin/tnui ]] && source /bin/tnui
+
+_addon_ext () {
+    tn_info "Este item baixa um addon EXTERNO de terceiros ($1)."
+    echo -e " ${TN_C_M}O painel local não é afetado; a fonte pode ficar offline.${TN_R}"
+    echo -ne " ${TN_C_C}➤${TN_R} ${TN_C_N}Continuar com o download? [s/n] :${TN_R} "
+    read r
+    [[ "$r" == "s" || "$r" == "S" ]]
+}
+
+while true
+do
     clear
-    figlet "CHECKUSER" | lolcat
-    echo -e "\033[46;1;37m              ★ MENU CHECKUSER ★               \033[0m"
-    echo -e "\033[01;31m\033[0m"
-    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 01 •\033[1;34m]\033[1;37m ➤  \033[1;33mINSTALAR CHECKUSER Conecta4G \033[0m"
-	echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 02 •\033[1;34m]\033[1;37m ➤  \033[1;33mINSTALAR CHECKUSER DTunnel VPN\033[0m"
-	echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 03 •\033[1;34m]\033[1;37m ➤  \033[1;33mINSTALAR CHECKUSER GL Tunnel VPN ⚠️\033[0m"
-	echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 04 •\033[1;34m]\033[1;37m ➤  \033[1;33mINSTALAR CHECKUSER AnyVPN MOD\033[0m"
-    echo -e "\033[01;31m\033[1;31m\033[1;34m[\033[1;37m 00 •\033[1;34m]\033[1;37m ➤  \033[1;33mVOLTAR  \033[1;32m<\033[1;33m<\033[1;31m< \033[0m"
-    echo -e "\033[01;31m\033[0m"
-    echo -e "\033[0;36m░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░░★░\033[0m"
-			tput civis
-			echo -ne "\033[1;31m➤ \033[1;32mESCOLHA OPÇÃO DESEJADA\033[1;33m\033[1;31m\033[1;37m : ";
-			read x
-			tput cnorm
-			clear
-			case $x in
-			1 | 01)
-			initcheck
-			;;
-			2 | 02)
-            bash <(curl -sL https://raw.githubusercontent.com/ScottBrabo/DTunnel/main/MenuDT.sh)
-            ;;
-            3 | 03)
-            bash <(curl -sL https://raw.githubusercontent.com/ScottBrabo/CheckUser/master/install.sh)
-            ;;
-            4 | 04)
-            bash <(wget -qO- https://raw.githubusercontent.com/ScottBrabo/DTunnel/main/AnyChk)
-            ;;
-			0 | 00)
-			clear
-			menu
-			;;
-			*)
-			echo -e "\033[1;31mOpcao invalida !\033[0m"
-			esac
-			sleep 2
+    tn_logo
+    tn_box_top "MENU CHECKUSER"
+    tn_item "01" "Checkuser Conecta4G (local)" "" "02" "Checkuser DTunnel VPN" ""
+    tn_item "03" "Checkuser GL Tunnel VPN" "" "04" "Checkuser AnyVPN MOD" ""
+    tn_item "00" "« Voltar" "" "" "" ""
+    tn_box_end
+    tn_prompt; read x
+    case "$x" in
+    1|01) clear; initcheck ;;
+    2|02) clear; _addon_ext "ScottBrabo/DTunnel" && bash <(curl -sL https://raw.githubusercontent.com/ScottBrabo/DTunnel/main/MenuDT.sh) ;;
+    3|03) clear; _addon_ext "ScottBrabo/CheckUser" && bash <(curl -sL https://raw.githubusercontent.com/ScottBrabo/CheckUser/master/install.sh) ;;
+    4|04) clear; _addon_ext "ScottBrabo/AnyChk" && bash <(wget -qO- https://raw.githubusercontent.com/ScottBrabo/DTunnel/main/AnyChk) ;;
+    0|00) clear; menu ;;
+    *) tn_erro "Opção inválida !"; sleep 2 ;;
+    esac
+done

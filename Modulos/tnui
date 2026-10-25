@@ -149,8 +149,36 @@ _tn_cards_row () {
 }
 
 # ---- chips de status ---------------------------------------
-tn_on  () { echo -ne "${TN_C_G}● ON${TN_R}"; }
-tn_off () { echo -ne "${TN_C_R}○ OFF${TN_R}"; }
+tn_on   () { echo -ne "${TN_C_G}● ON${TN_R}"; }
+tn_off  () { echo -ne "${TN_C_R}○ OFF${TN_R}"; }
+tn_wait () { echo -ne "${TN_C_Y}◐ AGUARDANDO${TN_R}"; }
+
+# tn_svc: status REAL do servico. $1 = padrao de processo; $2 = porta TCP
+# opcional. Retorna: 1 = processo ativo E porta escutando; 0 = nada ativo;
+# 2 = processo existe MAS a porta nao escuta (estado inconclusivo).
+tn_svc () {
+   local pat="$1" port="$2"
+   pgrep -f "$pat" >/dev/null 2>&1 || { echo 0; return; }
+   if [[ -n "$port" ]]; then
+      if ss -H -tln 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${port}$"; then
+         echo 1
+      else
+         echo 2
+      fi
+   else
+      echo 1
+   fi
+}
+# tn_svc_udp: idem para porta UDP (nao ha estado LISTEN em udp)
+tn_svc_udp () {
+   local pat="$1" port="$2"
+   pgrep -f "$pat" >/dev/null 2>&1 || { echo 0; return; }
+   if [[ -n "$port" ]] && ss -H -uln 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${port}$"; then
+      echo 1
+   else
+      echo 2
+   fi
+}
 
 # ---- item de menu ------------------------------------------
 # tn_item num rotulo status(1|0|"") [num2 rotulo2 status2]
@@ -159,10 +187,10 @@ tn_item () {
    tn_width
    local l r lv rv gap pad
    l=" ${TN_C_D}[${TN_R}${TN_C_Y}$(tn_pad "$num" 2 r)${TN_R}${TN_C_D}]${TN_R} ${TN_C_M}${label}${TN_R}"
-   if [[ "$st" == "1" ]]; then l+=" ${TN_C_G}●${TN_R}"; elif [[ "$st" == "0" ]]; then l+=" ${TN_C_R}○${TN_R}"; fi
+   if [[ "$st" == "1" ]]; then l+=" ${TN_C_G}●${TN_R}"; elif [[ "$st" == "2" ]]; then l+=" ${TN_C_Y}◐${TN_R}"; elif [[ "$st" == "0" ]]; then l+=" ${TN_C_R}○${TN_R}"; fi
    if [[ -n "$num2" && $TN_W -ge 62 ]]; then
       r="${TN_C_D}[${TN_R}${TN_C_Y}$(tn_pad "$num2" 2 r)${TN_R}${TN_C_D}]${TN_R} ${TN_C_M}${label2}${TN_R}"
-      if [[ "$st2" == "1" ]]; then r+=" ${TN_C_G}●${TN_R}"; elif [[ "$st2" == "0" ]]; then r+=" ${TN_C_R}○${TN_R}"; fi
+      if [[ "$st2" == "1" ]]; then r+=" ${TN_C_G}●${TN_R}"; elif [[ "$st2" == "2" ]]; then r+=" ${TN_C_Y}◐${TN_R}"; elif [[ "$st2" == "0" ]]; then r+=" ${TN_C_R}○${TN_R}"; fi
       lv=$(tn_vis "$l"); rv=$(tn_vis "$r")
       gap=$(( (TN_W - 6) / 2 - ${#lv} )); (( gap < 1 )) && gap=1
       pad=$(( TN_W - 2 - ${#lv} - ${#rv} - gap )); (( pad < 0 )) && pad=0

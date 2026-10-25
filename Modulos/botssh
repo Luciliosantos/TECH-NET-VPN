@@ -44,12 +44,18 @@ fun_botOnOff() {
         clear
         echo -e "\033[1;32mINICIANDO BOT TECH NET VPN \033[0m\n"
         fun_bot1() {
-        	[[ "$(grep -wc '16' /etc/issue.net)" != '0' ]] && {
-        		raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Modulos/ShellBot.sh > /etc/SSHPlus/ShellBot.sh
-        	}
+            # CORRIGIDO: a linha anterior chamava a URL sem wget (comando
+            # inexistente — erro silencioso) e baixava ShellBot.sh do
+            # repositorio antigo. Agora copia do projeto local.
+            SRC=$(cat /etc/technetvpn/source_dir 2>/dev/null)
+            if [[ -n "$SRC" && -f "$SRC/Modulos/ShellBot.sh" ]]; then
+                cp -f "$SRC/Modulos/ShellBot.sh" /etc/SSHPlus/ShellBot.sh
+            fi
             [[ ! -e "/etc/SSHPlus/ShellBot.sh" ]] && {
-				wget -qO- https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main/Modulos/ShellBot.sh >/etc/SSHPlus/ShellBot.sh
-			}
+                echo -e "\033[1;31mERRO: ShellBot.sh ausente (projeto local nao encontrado).\033[0m"
+                sleep 3
+                menu
+            }
             cd /etc/SSHPlus
             screen -dmS bot_plus ./bot $tokenbot $iduser >/dev/null 2>&1
             [[ $(grep -wc "bot_plus" /etc/autostart) = '0' ]] && {
