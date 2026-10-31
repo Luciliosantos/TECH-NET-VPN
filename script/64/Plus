@@ -234,7 +234,7 @@ escolher_tipo_acesso() {
     echo "  1 - ACESSO DEV"
     echo "  2 - ACESSO CLIENTE"
     echo ""
-    read -r -p "Escolha uma opção [2]: " opcao
+    read -r -e -i "2" -p "Escolha uma opção [2]: " opcao
     opcao="${opcao:-2}"
 
     case "$opcao" in
