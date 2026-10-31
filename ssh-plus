@@ -1,89 +1,303 @@
+
 #!/bin/bash
-# Corrige Python do Ubuntu 20.04 quando apt_pkg estiver incompatível
-if [ -x /usr/bin/python3.8 ]; then
-    if ! /usr/bin/python3 -c "import apt_pkg" >/dev/null 2>&1; then
-        ln -sf /usr/bin/python3.8 /usr/bin/python3
-    fi
-fi
+# ==========================================================
+# TECH NET VPN - INSTALADOR PRINCIPAL
+# Instala diretamente do GitHub em VPS limpa
+# Suporte: Ubuntu/Debian - x86_64 e ARM64
+# ==========================================================
 
-clear
-#--------------------------
-# @TECHNETVPN
-# CANAL TELEGRAM @TECHNETVPN
-# CORRIGIDO (v1.1): instala a partir do PROJETO LOCAL quando
-# disponivel (ZIP extraido no VPS). O repositorio remoto passa
-# a ser apenas alternativa (o antigo estava OFFLINE e derrubava
-# a instalacao inteira).
-#--------------------------
+set -Eeuo pipefail
 
-# - Cores
 RED='\033[1;31m'
+GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
 SCOLOR='\033[0m'
 
-# - Verifica Execucao Como Root
-[[ "$EUID" -ne 0 ]] && {
-    echo -e "${RED}[x] VC PRECISA EXECULTAR COMO USUARIO ROOT !${SCOLOR}"
+REPO="https://github.com/Luciliosantos/TECH-NET-VPN"
+BRANCH="main"
+PANEL_REPO="https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main"
+ARCHIVE_URL="https://codeload.github.com/Luciliosantos/TECH-NET-VPN/tar.gz/refs/heads/${BRANCH}"
+
+INSTALL_DIR="/opt/technetvpn-installer"
+
+msg() {
+    echo -e "${BLUE}[TECH NET VPN]${SCOLOR} $1"
+}
+
+erro() {
+    echo -e "${RED}[ERRO]${SCOLOR} $1" >&2
     exit 1
 }
 
-# - Verifica Arquitetura Compativel
+aviso() {
+    echo -e "${YELLOW}[AVISO]${SCOLOR} $1"
+}
+
+sucesso() {
+    echo -e "${GREEN}[OK]${SCOLOR} $1"
+}
+
+# ----------------------------------------------------------
+# ROOT
+# ----------------------------------------------------------
+
+if [[ "$EUID" -ne 0 ]]; then
+    erro "Execute este instalador como ROOT."
+fi
+
+# ----------------------------------------------------------
+# ARQUITETURA
+# ----------------------------------------------------------
+
 case "$(uname -m)" in
-    'amd64' | 'x86_64')
-        arch='64'
+    x86_64|amd64)
+        arch="64"
         ;;
-    'aarch64' | 'armv8')
-        arch='arm64'
+    aarch64|arm64)
+        arch="arm64"
         ;;
     *)
-        echo -e "${RED}[x] ARQUITETURA INCOMPATIVEL !${SCOLOR}"
-        exit 1
+        erro "Arquitetura não suportada: $(uname -m)"
         ;;
 esac
 
-# - Verifica OS Compativel
-if grep -qs "ubuntu" /etc/os-release; then
-	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
-    [[ "$os_version" -lt 1804 ]] && {
-        echo -e "${RED}[x] VERSAO DO UBUNTU INCOMPATIVEL !\n${YELLOW}[!] REQUER UBUNTU 18.04 OU SUPERIOR !${SCOLOR}"
-        exit 1
-    }
-elif [[ -e /etc/debian_version ]]; then
-	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
-    [[ "$os_version" -lt 9 ]] && {
-        echo -e "${RED}[x] VERSAO DO DEBIAN INCOMPATIVEL !\n${YELLOW}[!] REQUER DEBIAN 9 OU SUPERIOR !${SCOLOR}"
-        exit 1
-    }
-else
-    echo -e "${RED}[x] OS INCOMPATIVEL !\n${YELLOW}[!] REQUER DISTROS BASE DEBIAN/UBUNTU !${SCOLOR}"
-    exit 1
+msg "Arquitetura identificada: $arch"
+
+# ----------------------------------------------------------
+# SISTEMA OPERACIONAL
+# ----------------------------------------------------------
+
+if [[ ! -f /etc/os-release ]]; then
+    erro "Não foi possível identificar o sistema operacional."
 fi
 
-# - Atualiza Lista/Pacotes/Sistema
-dpkg --configure -a
-apt update -y && apt upgrade -y
-apt install unzip python3 -y
+. /etc/os-release
 
-# - Desabilita ipv6
-sysctl -w net.ipv6.conf.all.disable_ipv6=1 && sysctl -p
-echo 'net.ipv6.conf.all.disable_ipv6 = 1' > /etc/sysctl.d/70-disable-ipv6.conf
-sysctl -p -f /etc/sysctl.d/70-disable-ipv6.conf
+case "${ID:-}" in
+    ubuntu)
+        if ! dpkg --compare-versions "${VERSION_ID:-0}" ge "18.04"; then
+            erro "Ubuntu 18.04 ou superior é necessário."
+        fi
+        ;;
+    debian)
+        DEBIAN_VERSION="${VERSION_ID%%.*}"
 
-# - Execulta instalador
-PANEL_REPO="${PANEL_REPO:-https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main}"
-DIR_PAI="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+        if ! [[ "$DEBIAN_VERSION" =~ ^[0-9]+$ ]] ||
+           (( DEBIAN_VERSION < 9 )); then
+            erro "Debian 9 ou superior é necessário."
+        fi
+        ;;
+    *)
+        erro "Sistema não suportado: ${PRETTY_NAME:-desconhecido}. Use Ubuntu ou Debian."
+        ;;
+esac
 
-if [[ -f "$DIR_PAI/script/${arch}/Plus" ]]; then
-    # fonte local: ZIP do painel extraido no VPS
-    chmod +x "$DIR_PAI/script/${arch}/Plus"
-    bash "$DIR_PAI/script/${arch}/Plus"
+sucesso "Sistema identificado: ${PRETTY_NAME:-$ID}"
+
+# ----------------------------------------------------------
+# DEPENDÊNCIAS
+# ----------------------------------------------------------
+
+export DEBIAN_FRONTEND=noninteractive
+
+msg "Preparando o sistema..."
+
+if ! dpkg --configure -a; then
+    erro "Falha ao configurar pacotes pendentes do sistema."
+fi
+
+if ! apt-get update; then
+    erro "Falha ao atualizar a lista de pacotes. Verifique a conexão e os repositórios APT."
+fi
+
+if ! apt-get install -y \
+    ca-certificates \
+    curl \
+    wget \
+    tar \
+    gzip \
+    unzip \
+    python3; then
+    erro "Não foi possível instalar as dependências necessárias."
+fi
+
+sucesso "Dependências instaladas."
+
+# ----------------------------------------------------------
+# IPV6
+# Mantém o comportamento do instalador original.
+# ----------------------------------------------------------
+
+msg "Configurando rede..."
+
+if command -v sysctl >/dev/null 2>&1; then
+    sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1 || true
+
+    mkdir -p /etc/sysctl.d
+
+    echo 'net.ipv6.conf.all.disable_ipv6 = 1' \
+        > /etc/sysctl.d/70-disable-ipv6.conf
+
+    sysctl -p /etc/sysctl.d/70-disable-ipv6.conf \
+        >/dev/null 2>&1 || true
+fi
+
+# ----------------------------------------------------------
+# DOWNLOAD COMPLETO DO GITHUB
+# ----------------------------------------------------------
+
+msg "Preparando download do repositório..."
+
+WORK_DIR="$(mktemp -d /opt/.technetvpn-install.XXXXXX)" ||
+    erro "Não foi possível criar diretório temporário em /opt."
+
+cleanup() {
+    if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]]; then
+        rm -rf -- "$WORK_DIR"
+    fi
+}
+
+trap cleanup EXIT
+
+ARCHIVE="$WORK_DIR/technetvpn.tar.gz"
+SOURCE_DIR="$WORK_DIR/source"
+
+mkdir -p "$SOURCE_DIR"
+
+msg "Baixando projeto completo do GitHub..."
+
+DOWNLOAD_OK=0
+
+if curl -fL \
+    --retry 3 \
+    --retry-delay 2 \
+    --connect-timeout 20 \
+    --max-time 600 \
+    -o "$ARCHIVE" \
+    "$ARCHIVE_URL"; then
+    DOWNLOAD_OK=1
 else
-    # fonte remota (alternativa): exige repositorio no ar
-    [[ -e Plus ]] && rm Plus
-    wget -q "$PANEL_REPO/script/${arch}/Plus" || {
-        echo -e "${RED}[x] NAO FOI POSSIVEL OBTER O INSTALADOR.${SCOLOR}"
-        echo -e "${YELLOW}[!] Repositorio offline. Extraia o ZIP do painel no VPS e rode: bash ssh-plus${SCOLOR}"
-        exit 1
-    }
-    chmod +x Plus && ./Plus
+    aviso "Download pelo curl falhou. Tentando pelo wget..."
+fi
+
+if [[ "$DOWNLOAD_OK" -ne 1 ]]; then
+    if wget \
+        --tries=3 \
+        --timeout=30 \
+        -O "$ARCHIVE" \
+        "$ARCHIVE_URL"; then
+        DOWNLOAD_OK=1
+    fi
+fi
+
+if [[ "$DOWNLOAD_OK" -ne 1 || ! -s "$ARCHIVE" ]]; then
+    erro "Não foi possível baixar o projeto do GitHub. Verifique a conexão com github.com."
+fi
+
+# ----------------------------------------------------------
+# VALIDAÇÃO DO ARQUIVO
+# ----------------------------------------------------------
+
+msg "Validando pacote baixado..."
+
+if ! tar -tzf "$ARCHIVE" >/dev/null 2>&1; then
+    erro "O arquivo recebido do GitHub não é um pacote válido."
+fi
+
+if ! tar -tzf "$ARCHIVE" |
+    grep -Eq '^[^/]+/script/'"$arch"'/Plus$'; then
+    erro "O instalador script/$arch/Plus não foi encontrado no repositório."
+fi
+
+if ! tar -tzf "$ARCHIVE" |
+    grep -Eq '^[^/]+/Install/list$'; then
+    erro "O arquivo Install/list não foi encontrado no repositório."
+fi
+
+# ----------------------------------------------------------
+# EXTRAÇÃO
+# ----------------------------------------------------------
+
+msg "Extraindo arquivos do projeto..."
+
+if ! tar -xzf "$ARCHIVE" \
+    --strip-components=1 \
+    -C "$SOURCE_DIR"; then
+    erro "Falha ao extrair o projeto."
+fi
+
+PLUS_FILE="$SOURCE_DIR/script/$arch/Plus"
+
+if [[ ! -s "$PLUS_FILE" ]]; then
+    erro "O arquivo principal Plus está vazio ou ausente."
+fi
+
+if [[ ! -s "$SOURCE_DIR/Install/list" ]]; then
+    erro "Install/list está vazio ou ausente."
+fi
+
+if ! bash -n "$PLUS_FILE"; then
+    erro "O arquivo script/$arch/Plus contém erro de sintaxe."
+fi
+
+if ! bash -n "$SOURCE_DIR/Install/list"; then
+    erro "O arquivo Install/list contém erro de sintaxe."
+fi
+
+chmod +x "$PLUS_FILE" "$SOURCE_DIR/Install/list"
+
+sucesso "Projeto completo baixado e validado."
+
+# ----------------------------------------------------------
+# INSTALAÇÃO PERMANENTE DA FONTE
+# ----------------------------------------------------------
+
+msg "Preparando diretório do instalador..."
+
+mkdir -p "$(dirname "$INSTALL_DIR")"
+
+# Preserva uma cópia anterior, caso exista.
+if [[ -e "$INSTALL_DIR" ]]; then
+    BACKUP_DIR="${INSTALL_DIR}.backup.$(date +%Y%m%d%H%M%S)"
+
+    if ! mv "$INSTALL_DIR" "$BACKUP_DIR"; then
+        erro "Não foi possível preservar a instalação anterior."
+    fi
+
+    aviso "Cópia anterior preservada em: $BACKUP_DIR"
+fi
+
+if ! mv "$SOURCE_DIR" "$INSTALL_DIR"; then
+    erro "Não foi possível preparar os arquivos do instalador."
+fi
+
+PLUS_FILE="$INSTALL_DIR/script/$arch/Plus"
+
+if [[ ! -s "$INSTALL_DIR/Install/list" ||
+      ! -s "$PLUS_FILE" ]]; then
+    erro "A validação final dos arquivos falhou."
+fi
+
+chmod +x "$PLUS_FILE" "$INSTALL_DIR/Install/list"
+
+# Informa ao Plus a localização da fonte.
+export PANEL_SOURCE_DIR="$INSTALL_DIR"
+export PANEL_REPO
+
+sucesso "Arquivos disponíveis em $INSTALL_DIR"
+
+# ----------------------------------------------------------
+# EXECUÇÃO DO INSTALADOR
+# ----------------------------------------------------------
+
+msg "Iniciando instalação TECH NET VPN..."
+
+cd "$INSTALL_DIR"
+
+if bash "$PLUS_FILE"; then
+    sucesso "O instalador principal foi executado."
+else
+    RESULTADO=$?
+    erro "O instalador Plus terminou com erro (código $RESULTADO)."
 fi
