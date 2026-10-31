@@ -191,12 +191,12 @@ if ! tar -tzf "$ARCHIVE" >/dev/null 2>&1; then
 fi
 
 if ! tar -tzf "$ARCHIVE" |
-    grep -Eq '^[^/]+/script/'"$ARCH"'/Plus$'; then
+    grep -E '^[^/]+/script/'"$ARCH"'/Plus$' >/dev/null; then
     fail "Não foi encontrado script/$ARCH/Plus no GitHub."
 fi
 
 if ! tar -tzf "$ARCHIVE" |
-    grep -Eq '^[^/]+/Install/list$'; then
+    grep -E '^[^/]+/Install/list$' >/dev/null; then
     fail "Não foi encontrado Install/list no GitHub."
 fi
 
