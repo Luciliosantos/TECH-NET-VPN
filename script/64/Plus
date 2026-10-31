@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # ==========================================================
 # TECH NET VPN - INSTALADOR X64
@@ -16,24 +15,15 @@ NC='\033[0m'
 PANEL_REPO="${PANEL_REPO:-https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main}"
 SRC_DIR="${PANEL_SOURCE_DIR:-}"
 
-# ==========================================================
-# ROOT
-# ==========================================================
-
 if [[ "$EUID" -ne 0 ]]; then
     echo -e "${RED}Você precisa executar como root.${NC}"
     exit 1
 fi
 
-# ==========================================================
-# CAMINHOS E PARÂMETROS ORIGINAIS
-# ==========================================================
-
 _lnk=$(echo 'z1:y#x.5s0ul&p4hs$s.0a72d*n-e!v89e032:3r' | sed 's/[^a-z.]//ig' | rev)
 _Ink=$(echo '/3×u3#s87r/l32o4×c1a×l1/83×l24×l24×i0b×' | sed 's/[^a-z/]//ig')
 _1nk=$(echo '/3×u3#s×87r/83×l2×4×i0b×' | sed 's/[^a-z/]//ig')
 
-# Localiza a raiz do projeto se não foi informada pelo ssh-plus.
 if [[ -z "$SRC_DIR" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
     CANDIDATE="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
@@ -44,10 +34,6 @@ fi
 
 mkdir -p "$_Ink" "$_1nk" /etc/technetvpn
 
-# ==========================================================
-# DOWNLOAD SEGURO DOS ARQUIVOS
-# ==========================================================
-
 fun_src() {
     local rel="$1"
     local dst="$2"
@@ -55,24 +41,18 @@ fun_src() {
 
     mkdir -p "$(dirname "$dst")" || return 1
 
-    # Primeiro utiliza a cópia completa do GitHub.
     if [[ -n "$SRC_DIR" && -s "$SRC_DIR/$rel" ]]; then
         if cp -f "$SRC_DIR/$rel" "$dst"; then
             [[ -s "$dst" ]] && return 0
         fi
     fi
 
-    # Alternativa: download direto do GitHub.
     tmp="${dst}.download.$$"
     rm -f "$tmp"
 
-    if curl -fLsS \
-        --retry 3 \
-        --retry-delay 2 \
-        --connect-timeout 20 \
-        --max-time 180 \
+    if curl -fLsS --retry 3 --retry-delay 2 \
+        --connect-timeout 20 --max-time 180 \
         -o "$tmp" "$PANEL_REPO/$rel"; then
-
         if [[ -s "$tmp" ]]; then
             mv -f "$tmp" "$dst" && return 0
         fi
@@ -80,25 +60,16 @@ fun_src() {
 
     rm -f "$tmp"
 
-    if wget -q \
-        --tries=3 \
-        --timeout=30 \
-        -O "$tmp" "$PANEL_REPO/$rel"; then
-
+    if wget -q --tries=3 --timeout=30 -O "$tmp" "$PANEL_REPO/$rel"; then
         if [[ -s "$tmp" ]]; then
             mv -f "$tmp" "$dst" && return 0
         fi
     fi
 
     rm -f "$tmp"
-
     echo "Falha ao obter: $rel" >> /etc/technetvpn/install.log
     return 1
 }
-
-# ==========================================================
-# VALIDAR ARQUIVOS ESSENCIAIS
-# ==========================================================
 
 if [[ ! -s "$SRC_DIR/Install/list" ]]; then
     if ! fun_src "Install/list" "$_Ink/list"; then
@@ -112,25 +83,14 @@ else
     }
 fi
 
-if [[ ! -s "$_Ink/list" ]]; then
-    echo -e "${RED}Install/list está vazio.${NC}"
-    exit 1
-fi
-
-if ! bash -n "$_Ink/list"; then
-    echo -e "${RED}Erro de sintaxe em Install/list.${NC}"
+if [[ ! -s "$_Ink/list" ]] || ! bash -n "$_Ink/list"; then
+    echo -e "${RED}Install/list inválido ou com erro de sintaxe.${NC}"
     exit 1
 fi
 
 chmod +x "$_Ink/list"
-
 echo "$SRC_DIR" > /etc/technetvpn/source_dir 2>/dev/null || true
-
 cd "$HOME" || exit 1
-
-# ==========================================================
-# BARRA DE PROGRESSO
-# ==========================================================
 
 fun_bar() {
     local command="$1"
@@ -159,373 +119,3 @@ fun_bar() {
         return "$status"
     fi
 }
-
-# ==========================================================
-# LICENÇA
-# ==========================================================
-
-LICENCA_API="http://191.252.218.217:8787/api/licenca/validar"
-PRODUTO_LICENCA="PAINELVPN"
-
-obter_vps_id() {
-    VPS_ID=""
-
-    if [[ -s /etc/machine-id ]]; then
-        VPS_ID="$(tr -d '[:space:]' < /etc/machine-id)"
-    fi
-
-    if [[ -z "$VPS_ID" && -s /var/lib/dbus/machine-id ]]; then
-        VPS_ID="$(tr -d '[:space:]' < /var/lib/dbus/machine-id)"
-    fi
-
-    if [[ -z "$VPS_ID" ]]; then
-        VPS_ID="$(hostname)"
-    fi
-
-    [[ -n "$VPS_ID" ]]
-}
-
-validar_licenca() {
-    echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${YELLOW}       LICENÇA TECH NET VPN${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-
-    read -r -p "Digite sua licença: " LICENCA
-    LICENCA="$(echo "$LICENCA" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')"
-
-    if [[ -z "$LICENCA" ]]; then
-        echo -e "${RED}Licença não informada.${NC}"
-        return 1
-    fi
-
-    if ! obter_vps_id; then
-        echo -e "${RED}Não foi possível identificar esta VPS.${NC}"
-        return 1
-    fi
-
-    echo -e "${BLUE}Validando licença...${NC}"
-
-    RESPOSTA="$(curl -fsS \
-        --connect-timeout 10 \
-        --max-time 20 \
-        -H "Content-Type: application/json" \
-        -X POST \
-        -d "{\"codigo\":\"$LICENCA\",\"vps_id\":\"$VPS_ID\",\"produto\":\"$PRODUTO_LICENCA\"}" \
-        "$LICENCA_API" 2>/dev/null)" || RESPOSTA=""
-
-    if [[ -z "$RESPOSTA" ]]; then
-        echo -e "${RED}Não foi possível conectar ao servidor de licenças.${NC}"
-
-        if [[ -f /etc/technetvpn/licenca.conf ]] &&
-           grep -qi '^LICENCA_MODO *= *livre' /etc/technetvpn/licenca.conf; then
-            echo "LIVRE-MODO-$(date '+%Y-%m-%d')" > /etc/technetvpn/licenca
-            echo -e "${YELLOW}Modo livre configurado.${NC}"
-            return 0
-        fi
-
-        echo "[R] Tentar novamente"
-        echo "[C] Continuar sem licença validada"
-        echo "[X] Abortar"
-
-        read -r -p "Opção [R/C/X]: " opcl
-
-        case "$(echo "$opcl" | tr '[:lower:]' '[:upper:]')" in
-            C)
-                echo "NAO-VALIDADA-SERVIDOR-OFFLINE-$(date '+%Y-%m-%d')" > /etc/technetvpn/licenca
-                return 0
-                ;;
-            X)
-                return 1
-                ;;
-            *)
-                validar_licenca
-                return $?
-                ;;
-        esac
-    fi
-
-    if echo "$RESPOSTA" | grep -Eiq \
-        '"(valida|valid|ok)"[[:space:]]*:[[:space:]]*true|"status"[[:space:]]*:[[:space:]]*"(valid|valida|ativa|ativo|approved|aprovado)"'; then
-
-        printf '%s\n' "$LICENCA" > /etc/technetvpn/licenca
-        printf '%s\n' "$VPS_ID" > /etc/technetvpn/vps_id
-
-        chmod 600 /etc/technetvpn/licenca /etc/technetvpn/vps_id
-
-        echo -e "${GREEN}Licença validada com sucesso!${NC}"
-        sleep 2
-        return 0
-    fi
-
-    MENSAGEM="$(echo "$RESPOSTA" | sed -n 's/.*"mensagem"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
-
-    [[ -z "$MENSAGEM" ]] &&
-        MENSAGEM="$(echo "$RESPOSTA" | sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
-
-    echo -e "${RED}Licença não autorizada: ${MENSAGEM:-licença inválida ou vencida}.${NC}"
-    return 1
-}
-
-# ==========================================================
-# PYTHON
-# ==========================================================
-
-otimize_python() {
-    echo -e "${BLUE}Verificando Python...${NC}"
-
-    if ! command -v python3 >/dev/null 2>&1; then
-        apt-get install -y python3 || return 1
-    fi
-
-    if ! command -v pip3 >/dev/null 2>&1; then
-        apt-get install -y python3-pip || true
-    fi
-
-    apt-get install -y socat || return 1
-
-    python3 --version
-    echo -e "${GREEN}Python do sistema preservado.${NC}"
-}
-
-# ==========================================================
-# BANNER
-# ==========================================================
-
-if command -v figlet >/dev/null 2>&1 &&
-   command -v lolcat >/dev/null 2>&1; then
-    figlet "TECH NET VPN" | lolcat
-else
-    echo "TECH NET VPN"
-fi
-
-echo ""
-echo "SISTEMAS COMPATÍVEIS"
-echo "Ubuntu e Debian - arquitetura x64"
-echo ""
-
-# ==========================================================
-# LICENÇA
-# ==========================================================
-
-if ! validar_licenca; then
-    echo -e "${RED}Instalação interrompida na validação da licença.${NC}"
-    exit 1
-fi
-
-sleep 2
-
-# ==========================================================
-# ARQUIVOS INICIAIS
-# ==========================================================
-
-echo "/bin/menu" > /bin/h
-chmod +x /bin/h
-
-fun_src "Install/versao" "$HOME/versao" ||
-    echo -e "${YELLOW}Aviso: Install/versao não encontrado.${NC}"
-
-fun_src "Modulos/v2raymanager" "$HOME/v2raymanager" ||
-    echo -e "${YELLOW}Aviso: v2raymanager não encontrado.${NC}"
-
-fun_src "Modulos/botteste.sh" "$HOME/botteste.sh" ||
-    echo -e "${YELLOW}Aviso: botteste.sh não encontrado.${NC}"
-
-[[ -f "$HOME/v2raymanager" ]] && chmod +x "$HOME/v2raymanager"
-[[ -f "$HOME/botteste.sh" ]] && chmod +x "$HOME/botteste.sh"
-
-mkdir -p "$HOME/BOT"
-
-fun_src "Modulos/ShellBot.sh" "$HOME/BOT/ShellBot.sh" ||
-    echo -e "${YELLOW}Aviso: ShellBot.sh não encontrado.${NC}"
-
-[[ -f "$HOME/BOT/ShellBot.sh" ]] &&
-    chmod +x "$HOME/BOT/ShellBot.sh"
-
-# ==========================================================
-# LICENÇA AUXILIAR
-# ==========================================================
-
-mkdir -p /etc/rec
-
-fun_src "Modulos/licence" "/etc/rec/licence" ||
-    printf '%s\n' 'by: @TECHNETVPN' > /etc/rec/licence
-
-chmod 755 /etc/rec/licence
-
-# ==========================================================
-# BASE DE USUÁRIOS
-# ==========================================================
-
-if [[ -f "$HOME/usuarios.db" ]]; then
-    echo ""
-    echo "Dados de usuários encontrados."
-    echo "[1] Manter dados atuais"
-    echo "[2] Criar nova base de dados"
-    read -r -p "Opção [1/2]: " optiondb
-
-    if [[ "$optiondb" == "2" ]]; then
-        awk -F: '$3 >= 500 {print $1 " 1"}' /etc/passwd |
-            grep -v '^nobody' > "$HOME/usuarios.db"
-    fi
-else
-    awk -F: '$3 >= 500 {print $1 " 1"}' /etc/passwd |
-        grep -v '^nobody' > "$HOME/usuarios.db"
-fi
-
-# ==========================================================
-# ATUALIZAÇÃO
-# ==========================================================
-
-fun_attlist() {
-    apt-get update -y || return 1
-    mkdir -p /usr/share/.plus
-    echo "crz: $(date)" > /usr/share/.plus/.plus
-}
-
-fun_bar 'fun_attlist' || exit 1
-
-# ==========================================================
-# PACOTES
-# ==========================================================
-
-inst_pct() {
-    local pacotes=(
-        bc screen nano unzip lsof net-tools dos2unix
-        nload jq curl figlet python3 python3-pip at
-        lolcat boxes git socat
-    )
-
-    apt-get install -y "${pacotes[@]}" || return 1
-
-    if command -v pip3 >/dev/null 2>&1; then
-        pip3 install speedtest-cli || true
-    fi
-}
-
-fun_bar 'inst_pct' || exit 1
-
-# ==========================================================
-# FIREWALL
-# ==========================================================
-
-if command -v ufw >/dev/null 2>&1; then
-    for port in 22 443 80 3128 8799 8080 8888; do
-        ufw allow "$port/tcp" >/dev/null 2>&1 || true
-    done
-fi
-
-# ==========================================================
-# PYTHON
-# ==========================================================
-
-fun_bar 'otimize_python' || exit 1
-
-# ==========================================================
-# EXECUTAR INSTALL/LIST
-# Mantém os parâmetros originais utilizados pelo painel.
-# ==========================================================
-
-echo -e "${BLUE}Executando configuração auxiliar...${NC}"
-
-if [[ ! -s "$_Ink/list" ]]; then
-    echo -e "${RED}Install/list não está disponível.${NC}"
-    exit 1
-fi
-
-# Argumentos originais:
-# $1 = _lnk
-# $2 = _Ink
-# $3 = _1nk
-# $4 = key (mantido vazio se não definido)
-#
-# O arquivo auxiliar recebe os mesmos quatro parâmetros.
-if ! bash "$_Ink/list" "$_lnk" "$_Ink" "$_1nk" "${key:-}"; then
-    echo -e "${RED}A configuração auxiliar Install/list falhou.${NC}"
-    exit 1
-fi
-
-# ==========================================================
-# CHUSER / USERCHECK
-# ==========================================================
-
-fun_src "Install/chuser" "/bin/chuser" ||
-    echo -e "${YELLOW}Aviso: chuser não encontrado.${NC}"
-
-fun_src "Install/userscheck" "/bin/userscheck" ||
-    echo -e "${YELLOW}Aviso: userscheck não encontrado.${NC}"
-
-[[ -f /bin/chuser ]] && chmod 755 /bin/chuser
-[[ -f /bin/userscheck ]] && chmod 755 /bin/userscheck
-
-# ==========================================================
-# CHECKUSER
-# ==========================================================
-
-mkdir -p /usr/lib/checkuser
-
-fun_src "Install/checkuser.py" "/usr/lib/checkuser/checkuser.py" ||
-    echo -e "${YELLOW}Aviso: checkuser.py não encontrado.${NC}"
-
-[[ -f /usr/lib/checkuser/checkuser.py ]] &&
-    chmod 755 /usr/lib/checkuser/checkuser.py
-
-# ==========================================================
-# MOTD E IDENTIDADE
-# ==========================================================
-
-mkdir -p /etc/technetvpn
-
-if [[ -f /etc/motd ]]; then
-    cp -n /etc/motd \
-        "/etc/technetvpn/backup-motd-$(date '+%Y%m%d%H%M%S')" \
-        2>/dev/null || true
-fi
-
-printf 'TECH NET VPN\n@TECHNETVPN\n\nDigite ( menu ) para abrir o painel.\n' > /etc/motd
-
-if [[ -f /etc/issue.net ]]; then
-    cp -n /etc/issue.net /etc/technetvpn/backup-issue.net 2>/dev/null || true
-fi
-
-printf 'TECH NET VPN - @TECHNETVPN\n' > /etc/issue.net
-
-# ==========================================================
-# BASHRC
-# ==========================================================
-
-touch /root/.bashrc
-
-sed -i '/#INICIO-TECHNETVPN-BASHRC/,/#FIM-TECHNETVPN-BASHRC/d' \
-    /root/.bashrc
-
-cat >> /root/.bashrc <<'BRC'
-
-#INICIO-TECHNETVPN-BASHRC
-if [[ $- == *i* ]]; then
-    DATE=$(date +"%d-%m-%y")
-    TIME=$(date +"%T")
-    command -v figlet >/dev/null 2>&1 && figlet -k "TECH NET VPN" | lolcat 2>/dev/null
-    echo "NOME DO SERVIDOR: $HOSTNAME"
-    echo "SERVIDOR LIGADO: $(uptime -p 2>/dev/null)"
-    echo "DATA: $DATE"
-    echo "HORA: $TIME"
-    echo "@TECHNETVPN"
-    echo "Digite menu para entrar."
-fi
-#FIM-TECHNETVPN-BASHRC
-BRC
-
-# ==========================================================
-# FINALIZAÇÃO
-# ==========================================================
-
-echo ""
-echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}       INSTALAÇÃO X64 FINALIZADA${NC}"
-echo -e "${GREEN}============================================${NC}"
-echo ""
-echo -e "${YELLOW}Para iniciar, digite: menu${NC}"
-echo -e "${YELLOW}Telegram: @TECHNETVPN${NC}"
-
-exit 0
