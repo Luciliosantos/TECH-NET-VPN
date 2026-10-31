@@ -2,8 +2,8 @@
 #!/bin/bash
 # ==========================================================
 # TECH NET VPN - INSTALADOR PRINCIPAL
-# Instala diretamente do GitHub em VPS limpa
-# Suporte: Ubuntu/Debian - x86_64 e ARM64
+# Download completo diretamente do GitHub
+# Ubuntu / Debian - x86_64 / ARM64
 # ==========================================================
 
 set -Eeuo pipefail
@@ -12,64 +12,64 @@ RED='\033[1;31m'
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
-SCOLOR='\033[0m'
+NC='\033[0m'
 
 REPO="https://github.com/Luciliosantos/TECH-NET-VPN"
 BRANCH="main"
-PANEL_REPO="https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main"
 ARCHIVE_URL="https://codeload.github.com/Luciliosantos/TECH-NET-VPN/tar.gz/refs/heads/${BRANCH}"
-
 INSTALL_DIR="/opt/technetvpn-installer"
 
 msg() {
-    echo -e "${BLUE}[TECH NET VPN]${SCOLOR} $1"
+    echo -e "${BLUE}[TECH NET VPN]${NC} $1"
 }
 
-erro() {
-    echo -e "${RED}[ERRO]${SCOLOR} $1" >&2
+ok() {
+    echo -e "${GREEN}[OK]${NC} $1"
+}
+
+fail() {
+    echo -e "${RED}[ERRO]${NC} $1" >&2
     exit 1
 }
 
-aviso() {
-    echo -e "${YELLOW}[AVISO]${SCOLOR} $1"
+warn() {
+    echo -e "${YELLOW}[AVISO]${NC} $1"
 }
 
-sucesso() {
-    echo -e "${GREEN}[OK]${SCOLOR} $1"
-}
-
-# ----------------------------------------------------------
+# ==========================================================
 # ROOT
-# ----------------------------------------------------------
+# ==========================================================
 
 if [[ "$EUID" -ne 0 ]]; then
-    erro "Execute este instalador como ROOT."
+    fail "Execute o instalador como ROOT."
 fi
 
-# ----------------------------------------------------------
+clear 2>/dev/null || true
+
+# ==========================================================
 # ARQUITETURA
-# ----------------------------------------------------------
+# ==========================================================
 
 case "$(uname -m)" in
     x86_64|amd64)
-        arch="64"
+        ARCH="64"
         ;;
     aarch64|arm64)
-        arch="arm64"
+        ARCH="arm64"
         ;;
     *)
-        erro "Arquitetura não suportada: $(uname -m)"
+        fail "Arquitetura não suportada: $(uname -m)"
         ;;
 esac
 
-msg "Arquitetura identificada: $arch"
+msg "Arquitetura identificada: $ARCH"
 
-# ----------------------------------------------------------
+# ==========================================================
 # SISTEMA OPERACIONAL
-# ----------------------------------------------------------
+# ==========================================================
 
 if [[ ! -f /etc/os-release ]]; then
-    erro "Não foi possível identificar o sistema operacional."
+    fail "Não foi possível identificar o sistema operacional."
 fi
 
 . /etc/os-release
@@ -77,7 +77,7 @@ fi
 case "${ID:-}" in
     ubuntu)
         if ! dpkg --compare-versions "${VERSION_ID:-0}" ge "18.04"; then
-            erro "Ubuntu 18.04 ou superior é necessário."
+            fail "É necessário Ubuntu 18.04 ou superior."
         fi
         ;;
     debian)
@@ -85,30 +85,30 @@ case "${ID:-}" in
 
         if ! [[ "$DEBIAN_VERSION" =~ ^[0-9]+$ ]] ||
            (( DEBIAN_VERSION < 9 )); then
-            erro "Debian 9 ou superior é necessário."
+            fail "É necessário Debian 9 ou superior."
         fi
         ;;
     *)
-        erro "Sistema não suportado: ${PRETTY_NAME:-desconhecido}. Use Ubuntu ou Debian."
+        fail "Sistema não suportado. Utilize Ubuntu ou Debian."
         ;;
 esac
 
-sucesso "Sistema identificado: ${PRETTY_NAME:-$ID}"
+ok "Sistema identificado: ${PRETTY_NAME:-$ID}"
 
-# ----------------------------------------------------------
+# ==========================================================
 # DEPENDÊNCIAS
-# ----------------------------------------------------------
+# ==========================================================
 
 export DEBIAN_FRONTEND=noninteractive
 
 msg "Preparando o sistema..."
 
 if ! dpkg --configure -a; then
-    erro "Falha ao configurar pacotes pendentes do sistema."
+    fail "Existem pacotes pendentes com erro no sistema."
 fi
 
 if ! apt-get update; then
-    erro "Falha ao atualizar a lista de pacotes. Verifique a conexão e os repositórios APT."
+    fail "Falha ao atualizar os repositórios APT."
 fi
 
 if ! apt-get install -y \
@@ -119,38 +119,19 @@ if ! apt-get install -y \
     gzip \
     unzip \
     python3; then
-    erro "Não foi possível instalar as dependências necessárias."
+    fail "Não foi possível instalar as dependências básicas."
 fi
 
-sucesso "Dependências instaladas."
+ok "Dependências básicas instaladas."
 
-# ----------------------------------------------------------
-# IPV6
-# Mantém o comportamento do instalador original.
-# ----------------------------------------------------------
+# ==========================================================
+# DIRETÓRIO TEMPORÁRIO
+# ==========================================================
 
-msg "Configurando rede..."
+mkdir -p /opt
 
-if command -v sysctl >/dev/null 2>&1; then
-    sysctl -w net.ipv6.conf.all.disable_ipv6=1 >/dev/null 2>&1 || true
-
-    mkdir -p /etc/sysctl.d
-
-    echo 'net.ipv6.conf.all.disable_ipv6 = 1' \
-        > /etc/sysctl.d/70-disable-ipv6.conf
-
-    sysctl -p /etc/sysctl.d/70-disable-ipv6.conf \
-        >/dev/null 2>&1 || true
-fi
-
-# ----------------------------------------------------------
-# DOWNLOAD COMPLETO DO GITHUB
-# ----------------------------------------------------------
-
-msg "Preparando download do repositório..."
-
-WORK_DIR="$(mktemp -d /opt/.technetvpn-install.XXXXXX)" ||
-    erro "Não foi possível criar diretório temporário em /opt."
+WORK_DIR="$(mktemp -d /opt/.technetvpn.XXXXXX)" ||
+    fail "Não foi possível criar diretório temporário."
 
 cleanup() {
     if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]]; then
@@ -160,12 +141,16 @@ cleanup() {
 
 trap cleanup EXIT
 
-ARCHIVE="$WORK_DIR/technetvpn.tar.gz"
+ARCHIVE="$WORK_DIR/project.tar.gz"
 SOURCE_DIR="$WORK_DIR/source"
 
 mkdir -p "$SOURCE_DIR"
 
-msg "Baixando projeto completo do GitHub..."
+# ==========================================================
+# DOWNLOAD DO REPOSITÓRIO COMPLETO
+# ==========================================================
+
+msg "Baixando o projeto completo do GitHub..."
 
 DOWNLOAD_OK=0
 
@@ -178,7 +163,7 @@ if curl -fL \
     "$ARCHIVE_URL"; then
     DOWNLOAD_OK=1
 else
-    aviso "Download pelo curl falhou. Tentando pelo wget..."
+    warn "Download pelo curl falhou. Tentando pelo wget..."
 fi
 
 if [[ "$DOWNLOAD_OK" -ne 1 ]]; then
@@ -192,112 +177,126 @@ if [[ "$DOWNLOAD_OK" -ne 1 ]]; then
 fi
 
 if [[ "$DOWNLOAD_OK" -ne 1 || ! -s "$ARCHIVE" ]]; then
-    erro "Não foi possível baixar o projeto do GitHub. Verifique a conexão com github.com."
+    fail "Falha ao baixar o repositório. Verifique a conexão com o GitHub."
 fi
 
-# ----------------------------------------------------------
-# VALIDAÇÃO DO ARQUIVO
-# ----------------------------------------------------------
+# ==========================================================
+# VALIDAR PACOTE
+# ==========================================================
 
-msg "Validando pacote baixado..."
+msg "Validando arquivos recebidos..."
 
 if ! tar -tzf "$ARCHIVE" >/dev/null 2>&1; then
-    erro "O arquivo recebido do GitHub não é um pacote válido."
+    fail "O arquivo recebido não é um pacote TAR válido."
 fi
 
 if ! tar -tzf "$ARCHIVE" |
-    grep -Eq '^[^/]+/script/'"$arch"'/Plus$'; then
-    erro "O instalador script/$arch/Plus não foi encontrado no repositório."
+    grep -Eq '^[^/]+/script/'"$ARCH"'/Plus$'; then
+    fail "Não foi encontrado script/$ARCH/Plus no GitHub."
 fi
 
 if ! tar -tzf "$ARCHIVE" |
     grep -Eq '^[^/]+/Install/list$'; then
-    erro "O arquivo Install/list não foi encontrado no repositório."
+    fail "Não foi encontrado Install/list no GitHub."
 fi
 
-# ----------------------------------------------------------
+# ==========================================================
 # EXTRAÇÃO
-# ----------------------------------------------------------
+# ==========================================================
 
-msg "Extraindo arquivos do projeto..."
+msg "Extraindo o projeto..."
 
 if ! tar -xzf "$ARCHIVE" \
     --strip-components=1 \
     -C "$SOURCE_DIR"; then
-    erro "Falha ao extrair o projeto."
+    fail "Falha ao extrair os arquivos."
 fi
 
-PLUS_FILE="$SOURCE_DIR/script/$arch/Plus"
+PLUS_FILE="$SOURCE_DIR/script/$ARCH/Plus"
+LIST_FILE="$SOURCE_DIR/Install/list"
 
 if [[ ! -s "$PLUS_FILE" ]]; then
-    erro "O arquivo principal Plus está vazio ou ausente."
+    fail "O arquivo Plus está ausente ou vazio."
 fi
 
-if [[ ! -s "$SOURCE_DIR/Install/list" ]]; then
-    erro "Install/list está vazio ou ausente."
+if [[ ! -s "$LIST_FILE" ]]; then
+    fail "O arquivo Install/list está ausente ou vazio."
 fi
 
 if ! bash -n "$PLUS_FILE"; then
-    erro "O arquivo script/$arch/Plus contém erro de sintaxe."
+    fail "Erro de sintaxe no script/$ARCH/Plus."
 fi
 
-if ! bash -n "$SOURCE_DIR/Install/list"; then
-    erro "O arquivo Install/list contém erro de sintaxe."
+if ! bash -n "$LIST_FILE"; then
+    fail "Erro de sintaxe no Install/list."
 fi
 
-chmod +x "$PLUS_FILE" "$SOURCE_DIR/Install/list"
+chmod +x "$PLUS_FILE" "$LIST_FILE"
 
-sucesso "Projeto completo baixado e validado."
+ok "Arquivos principais validados."
 
-# ----------------------------------------------------------
-# INSTALAÇÃO PERMANENTE DA FONTE
-# ----------------------------------------------------------
+# ==========================================================
+# PREPARAR DIRETÓRIO DEFINITIVO
+# ==========================================================
 
-msg "Preparando diretório do instalador..."
+msg "Preparando os arquivos do instalador..."
 
-mkdir -p "$(dirname "$INSTALL_DIR")"
+BACKUP_DIR=""
 
-# Preserva uma cópia anterior, caso exista.
 if [[ -e "$INSTALL_DIR" ]]; then
     BACKUP_DIR="${INSTALL_DIR}.backup.$(date +%Y%m%d%H%M%S)"
 
     if ! mv "$INSTALL_DIR" "$BACKUP_DIR"; then
-        erro "Não foi possível preservar a instalação anterior."
+        fail "Não foi possível preservar a instalação anterior."
     fi
 
-    aviso "Cópia anterior preservada em: $BACKUP_DIR"
+    warn "Versão anterior preservada em $BACKUP_DIR"
 fi
 
 if ! mv "$SOURCE_DIR" "$INSTALL_DIR"; then
-    erro "Não foi possível preparar os arquivos do instalador."
+    if [[ -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then
+        mv "$BACKUP_DIR" "$INSTALL_DIR" || true
+    fi
+    fail "Não foi possível preparar o diretório do projeto."
 fi
 
-PLUS_FILE="$INSTALL_DIR/script/$arch/Plus"
+PLUS_FILE="$INSTALL_DIR/script/$ARCH/Plus"
+LIST_FILE="$INSTALL_DIR/Install/list"
 
-if [[ ! -s "$INSTALL_DIR/Install/list" ||
-      ! -s "$PLUS_FILE" ]]; then
-    erro "A validação final dos arquivos falhou."
+if [[ ! -s "$PLUS_FILE" || ! -s "$LIST_FILE" ]]; then
+    fail "Falha na verificação final dos arquivos."
 fi
 
-chmod +x "$PLUS_FILE" "$INSTALL_DIR/Install/list"
+chmod +x "$PLUS_FILE" "$LIST_FILE"
 
-# Informa ao Plus a localização da fonte.
+# ==========================================================
+# INFORMAR ORIGEM AO INSTALADOR
+# ==========================================================
+
 export PANEL_SOURCE_DIR="$INSTALL_DIR"
-export PANEL_REPO
+export PANEL_REPO="https://raw.githubusercontent.com/Luciliosantos/TECH-NET-VPN/main"
 
-sucesso "Arquivos disponíveis em $INSTALL_DIR"
+mkdir -p /etc/technetvpn
 
-# ----------------------------------------------------------
-# EXECUÇÃO DO INSTALADOR
-# ----------------------------------------------------------
+printf '%s\n' "$INSTALL_DIR" > /etc/technetvpn/source_dir
 
-msg "Iniciando instalação TECH NET VPN..."
+ok "Projeto preparado em $INSTALL_DIR"
+
+# ==========================================================
+# EXECUTAR INSTALADOR DA ARQUITETURA
+# ==========================================================
+
+msg "Iniciando instalador para arquitetura $ARCH..."
 
 cd "$INSTALL_DIR"
 
-if bash "$PLUS_FILE"; then
-    sucesso "O instalador principal foi executado."
-else
-    RESULTADO=$?
-    erro "O instalador Plus terminou com erro (código $RESULTADO)."
+set +e
+bash "$PLUS_FILE"
+RESULTADO=$?
+set -e
+
+if [[ "$RESULTADO" -ne 0 ]]; then
+    fail "O instalador Plus terminou com erro. Código: $RESULTADO"
 fi
+
+ok "Execução do instalador Plus finalizada."
